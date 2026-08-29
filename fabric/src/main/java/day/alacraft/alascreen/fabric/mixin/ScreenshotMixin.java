@@ -14,8 +14,18 @@ import java.util.function.Consumer;
  *
  * <p>Deliberately the smallest thing that can work: it swaps the consumer
  * vanilla is about to hand its message to, and everything else lives in
- * {@link ScreenshotHook}, which knows no loader. When NeoForge lands, its mixin
- * is this file with a different package.
+ * {@link ScreenshotHook}.
+ *
+ * <p>One of these per loader, and that is deliberate rather than a shortcut.
+ * Sharing the class would mean putting the Mixin library on the classpath of the
+ * module whose entire point is that no loader is on it — and the two loaders
+ * process mixins differently enough (config format, annotation processing,
+ * refmaps) that the shared version would be a guess about both.
+ *
+ * <p>What matters is that it stays this thin. Everything the injection actually
+ * DOES lives in {@link ScreenshotHook}, shared: the NeoForge copy of this file
+ * differs by its package and nothing else, so a fix to the behaviour is written
+ * once regardless.
  *
  * <p><b>Why this injection point.</b> The message and the file name are built
  * inside a synthetic lambda, whose name changes whenever Mojang recompiles the

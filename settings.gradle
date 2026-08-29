@@ -39,9 +39,11 @@ includeBuild('build-logic')
 //              chat components and the confirmation screen. Compiled against
 //              NeoForm, so one copy serves every loader.
 //   fabric     the entrypoint and the loader-specific hooks. Deliberately thin.
-//
-// NeoForge slots in beside `fabric` without touching the two shared ones - that
-// is the whole point of the split.
+//   neoforge   the same, for the other loader. Its entrypoint is the mirror of
+//              Fabric's: the same steps in the same order, differing only where
+//              the loaders genuinely differ. When the two drift, the mod has
+//              quietly become two mods.
 include('common')
 include('common-mc')
 include('fabric')
+include('neoforge')

@@ -117,25 +117,33 @@ jobs:
         run: ./gradlew :common:test --no-daemon
 
       - name: Build the mod
-        run: ./gradlew :fabric:build --no-daemon
+        run: ./gradlew :fabric:build :neoforge:build --no-daemon
+
+      # The entrypoints are the only code written twice. Nothing else notices
+      # when one stops calling a shared step - both jars still build and both
+      # still run, the loader that lost the call just quietly does less.
+      - name: Loader parity
+        run: python3 tools/loader_parity_check.py
 
       # The jar is what people download; checking it here beats finding out from
       # a bug report that the metadata inside was wrong. The check also refuses a
       # jar carrying another loader's metadata, which is how a mixed-up artifact
       # would otherwise reach a store page under the wrong label.
       #
-      # One loader for now. When the NeoForge module lands, this file gains its
-      # build target, its verify call, its jar output and its two publish steps -
-      # and the release workflow is the ONLY place that has to change, because
-      # every step below reads the outputs set here.
-      - name: Verify the artifact
+      # Both jars, each against its own expected metadata. Verifying only one
+      # would leave the other free to ship with the wrong loader written inside,
+      # which is precisely the mix-up that reaches a store page under the wrong
+      # label.
+      - name: Verify the artifacts
         id: artifact
         env:
           VERSION: ${{ steps.version.outputs.version }}
           MC: ${{ steps.version.outputs.mc }}
         run: |
           bash .github/scripts/verify-artifact.sh "$VERSION" . fabric
+          bash .github/scripts/verify-artifact.sh "$VERSION" . neoforge
           echo "fabric_jar=fabric/build/libs/alascreen-fabric-$MC-$VERSION.jar" >> "$GITHUB_OUTPUT"
+          echo "neoforge_jar=neoforge/build/libs/alascreen-neoforge-$MC-$VERSION.jar" >> "$GITHUB_OUTPUT"
 
       # %(contents) is the whole message, verbatim. Do NOT rebuild it from
       # %(contents:subject) and %(contents:body): git treats the subject as the
@@ -164,6 +172,7 @@ jobs:
         with:
           files: |
             ${{ steps.artifact.outputs.fabric_jar }}
+            ${{ steps.artifact.outputs.neoforge_jar }}
           body_path: NOTES.md
           name: Ala Screen ${{ steps.version.outputs.version }}
 
@@ -178,7 +187,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           versions=$(curl -sSf --retry 5 --retry-delay 15 --retry-all-errors             --connect-timeout 20 --max-time 180             "https://api.modrinth.com/v2/project/$MODRINTH_PROJECT/version"             -H "User-Agent: AlaMine-Team-Org/AlaScreen-release/1.0")
-          for loader in fabric; do
+          for loader in fabric neoforge; do
             exists=$(printf '%s' "$versions" | jq -r --arg v "$VERSION+$loader"               'any(.[]; .version_number == $v)')
             echo "${loader}_exists=$exists" >> "$GITHUB_OUTPUT"
             echo "Modrinth $VERSION+$loader already published: $exists"
@@ -198,6 +207,14 @@ jobs:
           MC: ${{ steps.version.outputs.mc }}
           JAR: ${{ steps.artifact.outputs.fabric_jar }}
         run: bash .github/scripts/publish-modrinth.sh fabric
+
+      - name: Publish NeoForge to Modrinth
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true && env.SKIP_MODRINTH != 'true' && steps.modrinth_check.outputs.neoforge_exists != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          MC: ${{ steps.version.outputs.mc }}
+          JAR: ${{ steps.artifact.outputs.neoforge_jar }}
+        run: bash .github/scripts/publish-modrinth.sh neoforge
 
 
       # CurseForge identifies game versions, loaders and environments by numeric
@@ -235,9 +252,22 @@ jobs:
           check "$CLIENT_ID" "Client" || fail=1
           check "$SERVER_ID" "Server" || fail=1
 
+          # NeoForge by name rather than a pinned id: unlike Fabric, its entry
+          # has been renumbered before, and a stale literal here would upload
+          # the NeoForge jar tagged as something else. An empty result stops the
+          # release instead of silently dropping the loader from the upload.
+          NEOFORGE_ID=$(printf '%s' "$versions" | jq -r '.[] | select(.name == "NeoForge") | .id' | head -1)
+          if [ -z "$NEOFORGE_ID" ] || [ "$NEOFORGE_ID" = "null" ]; then
+            echo "::error::CurseForge has no game version named 'NeoForge'. List them with: curl -s \"https://minecraft.curseforge.com/api/game/versions?token=\$TOKEN\" | jq '.[] | {id, name}'"
+            fail=1
+          else
+            echo "  id $NEOFORGE_ID = NeoForge (resolved by name)"
+          fi
+
           [ "$fail" -eq 0 ] || exit 1
 
           echo "fabric_ids=[$MC_ID, $FABRIC_ID, $CLIENT_ID, $SERVER_ID]" >> "$GITHUB_OUTPUT"
+          echo "neoforge_ids=[$MC_ID, $NEOFORGE_ID, $CLIENT_ID, $SERVER_ID]" >> "$GITHUB_OUTPUT"
 
       # Each loader is its OWN step, so a partial failure is unambiguous in the
       # log and only the failed upload has to be re-run.
@@ -248,5 +278,14 @@ jobs:
           JAR: ${{ steps.artifact.outputs.fabric_jar }}
           GAME_VERSIONS: ${{ steps.cf_ids.outputs.fabric_ids }}
           LABEL: Fabric
+        run: bash .github/scripts/publish-curseforge.sh
+
+      - name: Publish NeoForge to CurseForge
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true && env.SKIP_CURSEFORGE != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          JAR: ${{ steps.artifact.outputs.neoforge_jar }}
+          GAME_VERSIONS: ${{ steps.cf_ids.outputs.neoforge_ids }}
+          LABEL: NeoForge
         run: bash .github/scripts/publish-curseforge.sh
 

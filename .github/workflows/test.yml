@@ -40,9 +40,17 @@ jobs:
       # other - and finding that out at release time means the release is already
       # half-published.
       - name: Build both loaders
-        run: ./gradlew :fabric:build --no-daemon --stacktrace
+        run: ./gradlew :fabric:build :neoforge:build --no-daemon --stacktrace
 
       - name: Verify both artifacts
         run: |
           VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
           bash .github/scripts/verify-artifact.sh "$VERSION" . fabric
+          bash .github/scripts/verify-artifact.sh "$VERSION" . neoforge
+
+      # The entrypoints are the only code written twice. Nothing else notices
+      # when one of them stops calling a shared step: both jars still build,
+      # both still run, and the loader that lost the call just quietly does
+      # less. This is the check that notices.
+      - name: Loader parity
+        run: python3 tools/loader_parity_check.py

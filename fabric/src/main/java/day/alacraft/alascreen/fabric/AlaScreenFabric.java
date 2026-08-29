@@ -7,10 +7,10 @@ import day.alacraft.alascreen.Config;
 import day.alacraft.alascreen.UploadService;
 import day.alacraft.alascreen.api.AlaScreenApi;
 import day.alacraft.alascreen.history.UploadHistory;
+import day.alacraft.alascreen.mc.CommandTree;
 import day.alacraft.alascreen.mc.ShareController;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -19,7 +19,6 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
 
 import java.nio.file.Path;
 
@@ -128,67 +127,18 @@ public class AlaScreenFabric implements ClientModInitializer {
     }
 
     /**
-     * {@code /alascreen} and its subcommands, registered as a CLIENT command.
+     * {@code /alascreen}, registered as a CLIENT command.
      *
      * <p>Client-side means the server never sees it: it works in singleplayer,
      * on a vanilla server and on a server that has never heard of this mod,
      * which is the entire point of a client tool.
+     *
+     * <p>The tree itself lives in {@link CommandTree}, shared with the other
+     * loader. All this file decides is which dispatcher it goes into.
      */
     private static void registerCommands() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) ->
-                dispatcher.register(ClientCommands.literal(AlaScreen.MOD_ID)
-                        .executes(context -> {
-                            controller.captureAndShare(Minecraft.getInstance());
-                            return 1;
-                        })
-                        .then(ClientCommands.literal("list")
-                                .executes(context -> {
-                                    controller.list(Minecraft.getInstance());
-                                    return 1;
-                                }))
-                        .then(ClientCommands.literal("help")
-                                .executes(context -> {
-                                    controller.help(Minecraft.getInstance());
-                                    return 1;
-                                }))
-                        // Run by the button on the vanilla F2 message, and
-                        // usable by hand for any file already in screenshots/.
-                        .then(ClientCommands.literal("upload")
-                                // Bare `upload` takes the newest screenshot. The
-                                // share button always passes a name, but when
-                                // that argument goes missing the player must get
-                                // their screenshot, not a parser error.
-                                .executes(context -> {
-                                    controller.uploadLatest(Minecraft.getInstance());
-                                    return 1;
-                                })
-                                .then(ClientCommands.argument("file", StringArgumentType.string())
-                                        .executes(context -> {
-                                            controller.uploadExisting(Minecraft.getInstance(),
-                                                    StringArgumentType.getString(context, "file"));
-                                            return 1;
-                                        })))
-                        // Bare `delete <id>` only ASKS; the deletion itself is
-                        // behind `confirm`, so a mis-click on a chat line cannot
-                        // destroy a link other people may already hold.
-                        .then(ClientCommands.literal("delete")
-                                .then(ClientCommands.argument("id", StringArgumentType.word())
-                                        .executes(context -> {
-                                            controller.askDelete(Minecraft.getInstance(),
-                                                    StringArgumentType.getString(context, "id"));
-                                            return 1;
-                                        })
-                                        .then(ClientCommands.literal("confirm")
-                                                .executes(context -> {
-                                                    controller.delete(Minecraft.getInstance(),
-                                                            StringArgumentType.getString(context, "id"));
-                                                    return 1;
-                                                }))
-                                        .then(ClientCommands.literal("cancel")
-                                                .executes(context -> {
-                                                    controller.cancelDelete(Minecraft.getInstance());
-                                                    return 1;
-                                                }))))));
+                dispatcher.register(CommandTree.build(controller)));
     }
 
     /**

@@ -40,12 +40,17 @@ picture itself.
 
 ## Status
 
-Version 0.1.0 on Minecraft 26.2, **Fabric**, client-side only — it works in
-singleplayer, on a vanilla server, and on a server that has never heard of it.
+Version 0.1.0 on Minecraft 26.2, **Fabric and NeoForge**, client-side only — it
+works in singleplayer, on a vanilla server, and on a server that has never heard
+of it.
 
-NeoForge is next and is a thin adapter rather than a rewrite: everything a player
-interacts with lives in `common` and `common-mc`, compiled from the same source
-by each loader. The Fabric entrypoint is the only loader-specific file.
+Both loaders ship the same build. Everything a player interacts with lives in
+`common` and `common-mc` and is compiled from one source by each loader, so the
+two entrypoints are thin adapters rather than two implementations: they differ
+only where the loaders themselves differ — where the game directory comes from,
+how a key binding is registered, which command-source type the dispatcher
+carries. A check in CI compares them on every push, because the way this
+arrangement fails is not a build error but a forgotten call on one side.
 
 ## Layout
 
@@ -53,7 +58,8 @@ by each loader. The Fabric entrypoint is the only loader-specific file.
 |---|---|---|
 | `common` | HTTP, multipart, config, history, locale mapping | no |
 | `common-mc` | capture, the confirmation screen, chat components, the flow | yes, via NeoForm |
-| `fabric` | entrypoint, key binding, client command | yes |
+| `fabric` | entrypoint, key binding, mixin | yes |
+| `neoforge` | the same, for the other loader | yes |
 
 `common` and `common-mc` are consumed as **source**, so every loader recompiles
 them with its own toolchain — one body of logic, no shading, no intermediate
@@ -64,9 +70,10 @@ artifact.
 Requires JDK 25.
 
 ```bash
-./gradlew :fabric:build     # jar in fabric/build/libs/
-./gradlew :common:test      # 37 unit tests, no game needed
-./gradlew :fabric:runClient # dev client
+./gradlew :fabric:build :neoforge:build   # jars in <loader>/build/libs/
+./gradlew :common:test                    # 37 unit tests, no game needed
+./gradlew :fabric:runClient               # dev client (or :neoforge:runClient)
+python3 tools/loader_parity_check.py      # the entrypoints still agree
 ```
 
 More in [docs/DEV-RUN.md](docs/DEV-RUN.md); API signatures verified against the
