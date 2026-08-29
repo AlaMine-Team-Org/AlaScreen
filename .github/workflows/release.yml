@@ -232,7 +232,15 @@ jobs:
           MC_ID=16498      # Minecraft 26.2
           FABRIC_ID=7499   # Fabric
           CLIENT_ID=9638   # Environment: Client
-          SERVER_ID=9639   # Environment: Server
+
+          # No Server tag, deliberately. This mod declares itself client-only in
+          # both fabric.mod.json and neoforge.mods.toml - it hooks the player's
+          # own screenshot key and uploads from their machine, and does nothing
+          # at all on a server. Tagging it Server would put it in front of server
+          # admins filtering for exactly that, who would install it and get
+          # nothing. The pairing was inherited from Ala Logger, which really is
+          # environment "*" because it uploads server logs too. Restore the tag
+          # only if this mod ever grows a server side.
 
           versions=$(curl -sSf --retry 5 --retry-delay 15 --retry-all-errors             --connect-timeout 20 --max-time 180             "https://minecraft.curseforge.com/api/game/versions?token=$CURSEFORGE_TOKEN")
 
@@ -250,7 +258,6 @@ jobs:
           check "$MC_ID" "$MC" || fail=1
           check "$FABRIC_ID" "Fabric" || fail=1
           check "$CLIENT_ID" "Client" || fail=1
-          check "$SERVER_ID" "Server" || fail=1
 
           # NeoForge by name rather than a pinned id: unlike Fabric, its entry
           # has been renumbered before, and a stale literal here would upload
@@ -266,8 +273,8 @@ jobs:
 
           [ "$fail" -eq 0 ] || exit 1
 
-          echo "fabric_ids=[$MC_ID, $FABRIC_ID, $CLIENT_ID, $SERVER_ID]" >> "$GITHUB_OUTPUT"
-          echo "neoforge_ids=[$MC_ID, $NEOFORGE_ID, $CLIENT_ID, $SERVER_ID]" >> "$GITHUB_OUTPUT"
+          echo "fabric_ids=[$MC_ID, $FABRIC_ID, $CLIENT_ID]" >> "$GITHUB_OUTPUT"
+          echo "neoforge_ids=[$MC_ID, $NEOFORGE_ID, $CLIENT_ID]" >> "$GITHUB_OUTPUT"
 
       # Each loader is its OWN step, so a partial failure is unambiguous in the
       # log and only the failed upload has to be re-run.
