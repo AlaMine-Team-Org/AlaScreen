@@ -11,6 +11,12 @@
 		"homepage": "https://alacraft.day/en/screenshots"
 	},
 	"license": "${license}",
+	"icon": {
+		"16": "assets/alascreen/icon-16.png",
+		"32": "assets/alascreen/icon-32.png",
+		"128": "assets/alascreen/icon-128.png",
+		"512": "assets/alascreen/icon-512.png"
+	},
 	"environment": "client",
 	"entrypoints": {
 		"client": [
