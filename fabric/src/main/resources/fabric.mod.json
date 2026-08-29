@@ -8,7 +8,10 @@
 		"${mod_author}"
 	],
 	"contact": {
-		"homepage": "https://alacraft.day/en/screenshots"
+		"homepage": "https://alacraft.day/en/screenshots",
+		"sources": "https://github.com/AlaMine-Team-Org/AlaScreen",
+		"issues": "https://github.com/AlaMine-Team-Org/AlaScreen/issues",
+		"discord": "https://discord.gg/QbSEPbGA8u"
 	},
 	"license": "${license}",
 	"icon": {
