@@ -22,6 +22,13 @@ inside the built jar by verify-artifact.sh.
 
 What is compared:
 
+  0. The two entrypoints call the SAME set of methods on shared objects. This is
+     the check that catches what nobody thought to list: the hand-written list in
+     (1) only covers steps someone remembered, and the first real divergence was
+     one nobody had - the NeoForge side never called api.close(), so an upload
+     still in flight when the player quit died with the process instead of being
+     given the few seconds of grace the Fabric side gives it. The list said
+     nothing, because api.close() was not on it.
   1. Both entrypoints perform the same shared steps.
   2. The default key matches. Different defaults per loader is a different mod
      for anyone who installs the other jar.
@@ -67,8 +74,43 @@ REQUIRED_CALLS = [
     ("buildApi(", "there is no API client, so there is nowhere to upload"),
 ]
 
+# Objects whose methods are shared logic, so a call on one of them belongs on
+# both sides. Instance names and type names both appear because the entrypoints
+# use a mix of the two.
+#
+# This list is kept honest by check_owner_list_current(): a shared type imported
+# by an entrypoint but missing here fails the run, so the list cannot quietly
+# fall behind the code it is supposed to cover.
+SHARED_OWNERS = {
+    "service", "api", "controller", "config",
+    "AlaScreen", "BuildInfo", "Config", "UploadService",
+    "AlaScreenApi", "UploadHistory", "CommandTree", "ShareController",
+}
+
+CALL_PATTERN = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*([a-zA-Z_][A-Za-z0-9_]*)\s*\(")
+IMPORT_PATTERN = re.compile(r"^import\s+day\.alacraft\.alascreen\.(?:[a-z0-9_]+\.)*([A-Z][A-Za-z0-9_]*)\s*;", re.M)
+
 failures = []
 notes = []
+
+
+def reject_text_blocks(source, where):
+    """Refuse to scan a file containing a Java text block.
+
+    `strip_comments` reads `\"\"\"` as an empty literal followed by the start of a
+    new one, so everything after it is mis-parsed - and the dangerous direction
+    is silent: calls swallowed into a phantom literal simply stop being
+    compared, and the check reports agreement it never established.
+
+    There are none in this codebase today. Stopping with a clear message is the
+    honest response to the day someone adds one; teaching the scanner text
+    blocks the day it is actually needed beats carrying untested code for it now.
+    """
+    if '\"\"\"' in source:
+        print("FATAL: %s contains a Java text block, which this scanner cannot parse "
+              "correctly. Teach strip_comments about text blocks before relying on "
+              "this check again." % where, file=sys.stderr)
+        sys.exit(2)
 
 
 def strip_comments(source):
@@ -148,6 +190,17 @@ def _selftest():
             print("FATAL: strip_comments is broken on %r -> %r" % (source, cleaned), file=sys.stderr)
             sys.exit(2)
 
+    # The call extractor needs the same treatment, and for the same reason: an
+    # extractor that finds nothing reports "identical on both" and waves every
+    # divergence through. It shipped broken once - a mangled escape left a
+    # literal backspace in the pattern, so it matched nothing and said the
+    # loaders agreed.
+    sample = "service.warmUp(); api.close(); other.thing(); config.load();"
+    found = shared_calls(sample)
+    if not {"service.warmUp", "api.close"} <= found or "other.thing" in found:
+        print("FATAL: shared_calls is broken - got %r" % sorted(found), file=sys.stderr)
+        sys.exit(2)
+
 
 def read(relative):
     path = os.path.join(ROOT, relative)
@@ -168,6 +221,53 @@ def check_shared_calls(fabric, neoforge):
 
         missing = "NeoForge" if in_fabric else "Fabric"
         failures.append("%s never calls %s - %s" % (missing, call, consequence))
+
+
+def shared_calls(source):
+    """Every method called on a shared object, as "owner.method"."""
+    return {owner + "." + method
+            for owner, method in CALL_PATTERN.findall(source)
+            if owner in SHARED_OWNERS}
+
+
+def check_shared_call_sets(fabric, neoforge):
+    """The two entrypoints must call the same things on the shared objects.
+
+    Unlike REQUIRED_CALLS this needs no foresight: anything one side does to the
+    shared logic and the other does not shows up here on its own. That is the
+    difference between guarding the steps someone listed and guarding the steps
+    that exist.
+    """
+    only_fabric = shared_calls(fabric) - shared_calls(neoforge)
+    only_neoforge = shared_calls(neoforge) - shared_calls(fabric)
+
+    for call in sorted(only_fabric):
+        failures.append("%s() happens on Fabric but not on NeoForge" % call)
+    for call in sorted(only_neoforge):
+        failures.append("%s() happens on NeoForge but not on Fabric" % call)
+
+    if not only_fabric and not only_neoforge:
+        notes.append("shared calls compared: %d, identical on both" % len(shared_calls(fabric)))
+
+
+def check_owner_list_current(fabric, neoforge, fabric_raw, neoforge_raw):
+    """Keep SHARED_OWNERS from falling behind the code.
+
+    A new shared type used by an entrypoint but absent from the list would be
+    excluded from the comparison above - silently, and in the direction that
+    makes the check pass. So an import that is not covered fails the run.
+
+    Imports are read from the RAW source: they sit above the class and are not
+    affected by comment stripping, and reading them here rather than guessing
+    from usage is what makes this exact rather than approximate.
+    """
+    imported = set(IMPORT_PATTERN.findall(fabric_raw)) | set(IMPORT_PATTERN.findall(neoforge_raw))
+    uncovered = imported - SHARED_OWNERS
+
+    for name in sorted(uncovered):
+        failures.append(
+            "%s is imported from the shared modules but is not in SHARED_OWNERS - "
+            "calls on it are not being compared between loaders" % name)
 
 
 def check_default_key(fabric, neoforge):
@@ -230,10 +330,18 @@ def main():
 
     # Comments are dropped first: commented-out code does not run, and counting
     # it as a call would be guarding nothing.
-    fabric = strip_comments(read(FABRIC_ENTRY))
-    neoforge = strip_comments(read(NEOFORGE_ENTRY))
+    fabric_raw = read(FABRIC_ENTRY)
+    neoforge_raw = read(NEOFORGE_ENTRY)
+
+    reject_text_blocks(fabric_raw, FABRIC_ENTRY)
+    reject_text_blocks(neoforge_raw, NEOFORGE_ENTRY)
+
+    fabric = strip_comments(fabric_raw)
+    neoforge = strip_comments(neoforge_raw)
 
     check_shared_calls(fabric, neoforge)
+    check_shared_call_sets(fabric, neoforge)
+    check_owner_list_current(fabric, neoforge, fabric_raw, neoforge_raw)
     check_default_key(fabric, neoforge)
     check_loader_tags(fabric, neoforge)
     check_mixins()

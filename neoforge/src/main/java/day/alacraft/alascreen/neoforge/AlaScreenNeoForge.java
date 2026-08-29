@@ -19,7 +19,9 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.GameShuttingDownEvent;
 
 import java.nio.file.Path;
 
@@ -54,6 +56,7 @@ public class AlaScreenNeoForge {
     private static Config config;
     private static ShareController controller;
     private static AlaScreenApi api;
+    private static UploadService service;
 
     private static final KeyMapping.Category CATEGORY =
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath(AlaScreen.MOD_ID, "main"));
@@ -83,7 +86,7 @@ public class AlaScreenNeoForge {
 
         api = buildApi(config, minecraftVersion());
 
-        UploadService service = new UploadService(
+        service = new UploadService(
                 config,
                 api,
                 new UploadHistory(dataDirectory.resolve("history.json")),
@@ -94,10 +97,6 @@ public class AlaScreenNeoForge {
 
         modBus.addListener(AlaScreenNeoForge::registerKeys);
         NeoForge.EVENT_BUS.register(AlaScreenNeoForge.class);
-
-        // Ask the site for its limits once, rather than discovering them during
-        // the first upload of the session. No image, no identifier.
-        service.warmUp();
 
         AlaScreen.LOGGER.info("{} {} ready - press the Ala Screen key to share a screenshot with {}",
                 AlaScreen.MOD_NAME, BuildInfo.version(), config.apiBaseUrl);
@@ -140,6 +139,34 @@ public class AlaScreenNeoForge {
         while (SHARE_KEY.consumeClick()) {
             controller.captureAndShare(net.minecraft.client.Minecraft.getInstance());
         }
+    }
+
+    /**
+     * Ask the site for its limits once the client is up, matching Fabric's
+     * {@code CLIENT_STARTED}.
+     *
+     * <p>Deliberately not done in the constructor. That runs while mods are
+     * still loading, and a network call there delays startup for something
+     * nobody has asked for yet - the limits are not needed until the first
+     * upload. No image and no identifier are sent.
+     */
+    @SubscribeEvent
+    public static void onClientStarted(ClientStartedEvent event) {
+        service.warmUp();
+    }
+
+    /**
+     * Let go of the HTTP client and its threads while there is still a shutdown
+     * to do it in, matching Fabric's {@code CLIENT_STOPPING}.
+     *
+     * <p>Without this an upload still in flight when the player quits dies with
+     * the process instead of getting its few seconds of grace - and the player
+     * is left with a screenshot that reached the site partly or not at all,
+     * with nothing on screen to say so.
+     */
+    @SubscribeEvent
+    public static void onGameShuttingDown(GameShuttingDownEvent event) {
+        api.close();
     }
 
     /**
