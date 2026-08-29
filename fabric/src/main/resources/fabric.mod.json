@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "${mod_id}",
+	"version": "${version}",
+	"name": "${mod_name}",
+	"description": "${description}",
+	"authors": [
+		"${mod_author}"
+	],
+	"contact": {
+		"homepage": "https://alacraft.day/en/screenshots"
+	},
+	"license": "${license}",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"day.alacraft.alascreen.fabric.AlaScreenFabric"
+		]
+	},
+	"mixins": [
+		"alascreen.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=${fabric_loader_version}",
+		"minecraft": "~${minecraft_version}",
+		"java": ">=${java_version}",
+		"fabric-api": "*"
+	}
+}

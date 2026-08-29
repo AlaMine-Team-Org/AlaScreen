@@ -1,0 +1,274 @@
+# Installed into the PUBLIC repository at .github/workflows/release.yml
+#
+# Publishing is driven by a tag, so the artifact and the version can never
+# disagree: whatever gradle.properties says has to match the tag, and the job
+# refuses to run if it does not.
+#
+# The release notes are the tag's own message. This repository ships no
+# CHANGELOG.md on purpose - the public history is the notes on each platform's
+# page, not a file with an open [Unreleased] section that would leak unfinished
+# entries. Cut the tag with the helper in the private repository, which passes
+# --cleanup=verbatim; git otherwise deletes every line starting with '#' from a
+# tag message, which is exactly what a Markdown heading looks like.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build and check, but publish nothing'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    # Declared at job level, not on the step: a step's own `env` is not visible
+    # to that step's `if`, so the publish steps would have skipped silently
+    # forever - a release that looks green and ships nothing.
+    env:
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+      CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+      MODRINTH_PROJECT: ${{ vars.MODRINTH_PROJECT_ID }}
+      CURSEFORGE_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+      # Set either to 'true' as a repository variable to publish without that
+      # platform on purpose. Absent a variable, a missing token is an error
+      # rather than a skip - see "Check the publishing configuration" below.
+      SKIP_MODRINTH: ${{ vars.SKIP_MODRINTH }}
+      SKIP_CURSEFORGE: ${{ vars.SKIP_CURSEFORGE }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The release notes come out of the tag's own message, so the tag
+          # object itself has to be here, not just the commit it points at.
+          fetch-depth: 0
+          fetch-tags: true
+
+      # A missing token used to mean "skip that platform quietly", which turns
+      # the worst outcome - a release nobody can download - into a green check
+      # mark. Decide it here, once, and fail loudly unless the omission was
+      # declared deliberately.
+      - name: Check the publishing configuration
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          fail=0
+          if [ "$SKIP_MODRINTH" != "true" ]; then
+            [ -n "$MODRINTH_TOKEN" ]   || { echo "::error::MODRINTH_TOKEN is not set. Add it, or set the repository variable SKIP_MODRINTH=true to publish without Modrinth on purpose."; fail=1; }
+            [ -n "$MODRINTH_PROJECT" ] || { echo "::error::the repository variable MODRINTH_PROJECT_ID is not set"; fail=1; }
+          else
+            echo "::warning::SKIP_MODRINTH=true - this release will not reach Modrinth"
+          fi
+          if [ "$SKIP_CURSEFORGE" != "true" ]; then
+            [ -n "$CURSEFORGE_TOKEN" ]   || { echo "::error::CURSEFORGE_TOKEN is not set. Add it, or set the repository variable SKIP_CURSEFORGE=true to publish without CurseForge on purpose."; fail=1; }
+            [ -n "$CURSEFORGE_PROJECT" ] || { echo "::error::the repository variable CURSEFORGE_PROJECT_ID is not set"; fail=1; }
+          else
+            echo "::warning::SKIP_CURSEFORGE=true - this release will not reach CurseForge"
+          fi
+          exit $fail
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Read the version
+        id: version
+        run: |
+          VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          MC=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "mc=$MC" >> "$GITHUB_OUTPUT"
+          echo "Version $VERSION for Minecraft $MC"
+
+      # A tag that disagrees with the file is always a mistake, and it is the
+      # kind that only shows up later as a jar whose name does not match its
+      # release page.
+      #
+      # Note the shape used from here on: values reach the scripts through the
+      # environment, not through ${{ }} interpolated into the shell text.
+      # Interpolation splices a value into the script before bash sees it, so
+      # whatever the value contains is read as code; a variable stays data.
+      - name: Check the tag matches the version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::Tag v$TAG does not match version $VERSION in gradle.properties."
+            exit 1
+          fi
+
+      - name: Cleanliness gate
+        run: bash .github/scripts/scan-clean.sh .
+
+      - name: Test
+        run: ./gradlew :common:test --no-daemon
+
+      - name: Build both loaders
+        run: ./gradlew :fabric:build :neoforge:build --no-daemon
+
+      # The jars are what people download; checking them here beats finding out
+      # from a bug report that the metadata inside one was wrong. Each check also
+      # refuses a jar carrying the OTHER loader's metadata, which is how a mixed-up
+      # artifact would otherwise reach a store page under the wrong label.
+      - name: Verify both artifacts
+        id: artifact
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          MC: ${{ steps.version.outputs.mc }}
+        run: |
+          bash .github/scripts/verify-artifact.sh "$VERSION" . fabric
+          bash .github/scripts/verify-artifact.sh "$VERSION" . neoforge
+          echo "fabric_jar=fabric/build/libs/alascreen-fabric-$MC-$VERSION.jar" >> "$GITHUB_OUTPUT"
+          echo "neoforge_jar=neoforge/build/libs/alascreen-neoforge-$MC-$VERSION.jar" >> "$GITHUB_OUTPUT"
+
+      # %(contents) is the whole message, verbatim. Do NOT rebuild it from
+      # %(contents:subject) and %(contents:body): git treats the subject as the
+      # first PARAGRAPH and folds its line breaks into one line, so a wrapped
+      # opening paragraph arrives on three store pages reflowed into a single
+      # long line.
+      - name: Take the release notes from the tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          git tag -l --format='%(contents)' "$TAG" > NOTES.md
+
+          if [ ! -s NOTES.md ] || [ -z "$(tr -d '[:space:]' < NOTES.md)" ]; then
+            echo "::error::Tag $TAG carries no message. Cut the release with an annotated tag:"
+            echo "  git tag -a $TAG --cleanup=verbatim -F notes.md"
+            exit 1
+          fi
+
+          echo "--- release notes -------------------------------------------"
+          cat NOTES.md
+          echo "-------------------------------------------------------------"
+
+      - name: GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.artifact.outputs.fabric_jar }}
+            ${{ steps.artifact.outputs.neoforge_jar }}
+          body_path: NOTES.md
+          name: Ala Screen ${{ steps.version.outputs.version }}
+
+      # Re-running a failed release must not create a second copy of a version
+      # that already uploaded. Modrinth rejects a duplicate version number, but
+      # with an error that looks like any other failure; asking first turns that
+      # into a clean skip.
+      - name: Which Modrinth versions already exist
+        id: modrinth_check
+        if: startsWith(github.ref, 'refs/tags/') && env.SKIP_MODRINTH != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          versions=$(curl -sSf --retry 5 --retry-delay 15 --retry-all-errors             --connect-timeout 20 --max-time 180             "https://api.modrinth.com/v2/project/$MODRINTH_PROJECT/version"             -H "User-Agent: AlaMine-Team-Org/AlaScreen-release/1.0")
+          for loader in fabric neoforge; do
+            exists=$(printf '%s' "$versions" | jq -r --arg v "$VERSION+$loader"               'any(.[]; .version_number == $v)')
+            echo "${loader}_exists=$exists" >> "$GITHUB_OUTPUT"
+            echo "Modrinth $VERSION+$loader already published: $exists"
+          done
+
+      # Two Modrinth versions for one tag, not one version with two files.
+      #
+      # Modrinth attaches dependencies to a VERSION, not to a file. The Fabric
+      # build requires Fabric API and the NeoForge build does not, so a single
+      # version carrying both jars would either declare Fabric API for a file that
+      # does not need it or omit it from the one that does. Two versions keep each
+      # jar honest, at the cost of a "+loader" suffix in the version number.
+      - name: Publish Fabric to Modrinth
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true && env.SKIP_MODRINTH != 'true' && steps.modrinth_check.outputs.fabric_exists != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          MC: ${{ steps.version.outputs.mc }}
+          JAR: ${{ steps.artifact.outputs.fabric_jar }}
+        run: bash .github/scripts/publish-modrinth.sh fabric
+
+      - name: Publish NeoForge to Modrinth
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true && env.SKIP_MODRINTH != 'true' && steps.modrinth_check.outputs.neoforge_exists != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          MC: ${{ steps.version.outputs.mc }}
+          JAR: ${{ steps.artifact.outputs.neoforge_jar }}
+        run: bash .github/scripts/publish-modrinth.sh neoforge
+
+      # CurseForge identifies game versions, loaders and environments by numeric
+      # id, and rejects an upload that names none of them. Minecraft and Fabric are
+      # pinned because matching "26.2" by name also hits a stale legacy entry and
+      # is rejected as error 1009; NeoForge is resolved by name because its id has
+      # moved before. Everything is verified against the API first: a clear failure
+      # here beats an opaque one mid-upload.
+      - name: Resolve the CurseForge version ids
+        id: cf_ids
+        if: startsWith(github.ref, 'refs/tags/') && env.SKIP_CURSEFORGE != 'true'
+        env:
+          MC: ${{ steps.version.outputs.mc }}
+        run: |
+          MC_ID=16498      # Minecraft 26.2
+          FABRIC_ID=7499   # Fabric
+          CLIENT_ID=9638   # Environment: Client
+          SERVER_ID=9639   # Environment: Server
+
+          versions=$(curl -sSf --retry 5 --retry-delay 15 --retry-all-errors             --connect-timeout 20 --max-time 180             "https://minecraft.curseforge.com/api/game/versions?token=$CURSEFORGE_TOKEN")
+
+          check() {
+            local id="$1" expected="$2" actual
+            actual=$(printf '%s' "$versions" | jq -r --argjson id "$id" '.[] | select(.id == $id) | .name' | head -1)
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::CurseForge id $id is '$actual', expected '$expected'. List them with: curl -s \"https://minecraft.curseforge.com/api/game/versions?token=\$TOKEN\" | jq '.[] | {id, name}'"
+              return 1
+            fi
+            echo "  id $id = $actual"
+          }
+
+          fail=0
+          check "$MC_ID" "$MC" || fail=1
+          check "$FABRIC_ID" "Fabric" || fail=1
+          check "$CLIENT_ID" "Client" || fail=1
+          check "$SERVER_ID" "Server" || fail=1
+
+          NEOFORGE_ID=$(printf '%s' "$versions" | jq -r 'map(select(.name == "NeoForge")) | .[0].id // empty')
+          if [ -z "$NEOFORGE_ID" ]; then
+            echo "::error::could not resolve the NeoForge modloader id from the versions API"
+            fail=1
+          else
+            echo "  NeoForge resolved to id $NEOFORGE_ID"
+          fi
+
+          [ "$fail" -eq 0 ] || exit 1
+
+          echo "fabric_ids=[$MC_ID, $FABRIC_ID, $CLIENT_ID, $SERVER_ID]" >> "$GITHUB_OUTPUT"
+          echo "neoforge_ids=[$MC_ID, $NEOFORGE_ID, $CLIENT_ID, $SERVER_ID]" >> "$GITHUB_OUTPUT"
+
+      # Two uploads as SEPARATE steps, so a partial failure is unambiguous in the
+      # log and only the failed one has to be re-run.
+      - name: Publish Fabric to CurseForge
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true && env.SKIP_CURSEFORGE != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          JAR: ${{ steps.artifact.outputs.fabric_jar }}
+          GAME_VERSIONS: ${{ steps.cf_ids.outputs.fabric_ids }}
+          LABEL: Fabric
+        run: bash .github/scripts/publish-curseforge.sh
+
+      - name: Publish NeoForge to CurseForge
+        if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true && env.SKIP_CURSEFORGE != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          JAR: ${{ steps.artifact.outputs.neoforge_jar }}
+          GAME_VERSIONS: ${{ steps.cf_ids.outputs.neoforge_ids }}
+          LABEL: NeoForge
+        run: bash .github/scripts/publish-curseforge.sh
