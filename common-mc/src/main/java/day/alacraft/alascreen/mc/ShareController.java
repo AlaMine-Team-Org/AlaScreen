@@ -3,6 +3,8 @@ package day.alacraft.alascreen.mc;
 import day.alacraft.alascreen.AlaScreen;
 import day.alacraft.alascreen.Config;
 import day.alacraft.alascreen.UploadService;
+import day.alacraft.alascreen.clipboard.CopyOutcome;
+import day.alacraft.alascreen.clipboard.ImageClipboard;
 import day.alacraft.alascreen.history.UploadRecord;
 import day.alacraft.alascreen.i18n.SiteLocale;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -41,6 +43,15 @@ public final class ShareController {
      * limiter answered for us.
      */
     private final AtomicBoolean busy = new AtomicBoolean();
+
+    /**
+     * One clipboard copy at a time.
+     *
+     * <p>Separate from {@link #busy}: copying an old screenshot has nothing to do
+     * with taking a new one, and sharing a flag would make each refuse the other
+     * for no reason a player could guess.
+     */
+    private final AtomicBoolean copying = new AtomicBoolean();
 
     public ShareController(Config config,
                            UploadService service,
@@ -204,7 +215,15 @@ public final class ShareController {
                         return;
                     }
 
-                    tell(minecraft, Feedback.uploaded(result));
+                    // Two conditions, not one. The picture is read off the disk,
+                    // so a local file has to exist — and it is found through the
+                    // upload history, so the history has to be kept. With
+                    // `persistHistory` off the file is right there and the id
+                    // leads nowhere, which is the one shape of this button that
+                    // looks like it works and never can.
+                    boolean canCopyImage = shot.savedTo().isPresent() && config.persistHistory;
+
+                    tell(minecraft, Feedback.uploaded(result, canCopyImage));
 
                     if (config.copyLinkToClipboard) {
                         minecraft.keyboardHandler.setClipboard(result.url());
@@ -225,15 +244,15 @@ public final class ShareController {
             return;
         }
 
-        Path path = screenshotsDirectory.resolve(fileName).normalize();
+        Optional<Path> resolved = insideScreenshots(fileName);
 
-        // The name arrives through a chat command, so it is caller-controlled.
-        // Without this, "../../.ssh/id_rsa" would be a valid screenshot to share.
-        if (!path.startsWith(screenshotsDirectory.normalize())) {
+        if (resolved.isEmpty()) {
             busy.set(false);
             tell(minecraft, ChatFormat.error("alascreen.error.not_found"));
             return;
         }
+
+        Path path = resolved.get();
 
         CompletableFuture
                 .supplyAsync(() -> read(path, fileName), runnable ->
@@ -282,6 +301,28 @@ public final class ShareController {
         }
     }
 
+    /**
+     * Resolve a file name against the screenshots folder, refusing to leave it.
+     *
+     * <p>The name arrives through a chat command, so it is caller-controlled:
+     * without the check, {@code "../../.ssh/id_rsa"} would be a valid screenshot
+     * to share — or, now, to put on the clipboard. One copy of the rule, used by
+     * both paths, because a second copy is the one that eventually drifts.
+     */
+    private Optional<Path> insideScreenshots(String fileName) {
+        try {
+            Path path = screenshotsDirectory.resolve(fileName).normalize();
+
+            return path.startsWith(screenshotsDirectory.normalize()) ? Optional.of(path) : Optional.empty();
+        } catch (java.nio.file.InvalidPathException impossibleName) {
+            // Windows refuses ':', '?' and '*' in a name, and resolve() answers
+            // with an exception rather than a value. The name reaches here from
+            // a chat command, so `/alascreen upload "a:b.png"` would otherwise
+            // throw out of the command handler instead of printing one red line.
+            return Optional.empty();
+        }
+    }
+
     private static CapturedShot read(Path path, String fileName) {
         try {
             byte[] png = Files.readAllBytes(path);
@@ -315,6 +356,72 @@ public final class ShareController {
                     .append(ChatFormat.button("alascreen.button.delete",
                             "alascreen.button.delete.hover", "alascreen delete " + record.id())));
         }
+    }
+
+    /**
+     * Put the picture itself on the clipboard, not its address.
+     *
+     * <p>Reached from the {@code [copy image]} button and from
+     * {@code /alascreen copyimage}. The picture comes off the disk: once an
+     * upload has finished the mod holds no pixels, and the history remembers a
+     * file name rather than an image.
+     *
+     * <p>The copy runs off the render thread. The system clipboard can block
+     * while another application hands over ownership, and on macOS this spawns a
+     * process; either would be a visible stall at the exact moment the player
+     * pressed a button.
+     */
+    public void copyImage(Minecraft minecraft, String idOrLast) {
+        // A chat button is trivially double-clicked, and this path says nothing
+        // while it works, so a second click is what a player naturally does.
+        // Without the guard that is two threads, two full PNG decodes — tens of
+        // megabytes each for a 4K shot — and a race for clipboard ownership in
+        // which the winner is whichever finished last, not whichever was asked
+        // last. Its own flag rather than `busy`: copying has nothing to do with
+        // capturing, and blocking one on the other would be a different lie.
+        if (!copying.compareAndSet(false, true)) {
+            return;
+        }
+
+        Optional<UploadRecord> target = service.find(idOrLast);
+
+        if (target.isEmpty()) {
+            copying.set(false);
+
+            // Nothing uploaded from this client yet is not the same as "no such
+            // id", and `list` and `upload` already say so in those words.
+            tell(minecraft, service.recent(1).isEmpty()
+                    ? ChatFormat.info("alascreen.chat.empty_history")
+                    : ChatFormat.error("alascreen.error.not_found"));
+            return;
+        }
+
+        Optional<Path> path = insideScreenshots(target.get().fileName());
+
+        // The file existed when the button was drawn. A week later it may not:
+        // the screenshots folder belongs to the player, not to the mod.
+        if (path.isEmpty() || !Files.isRegularFile(path.get())) {
+            copying.set(false);
+            tell(minecraft, ChatFormat.error(CopyOutcome.FILE_MISSING.messageKey()));
+            return;
+        }
+
+        CompletableFuture
+                .supplyAsync(() -> ImageClipboard.copy(path.get()), runnable ->
+                        new Thread(runnable, "AlaScreen clipboard").start())
+                .whenComplete((outcome, failure) -> minecraft.execute(() -> {
+                    copying.set(false);
+
+                    if (failure != null) {
+                        AlaScreen.LOGGER.warn("Copying {} to the clipboard failed.", path.get(), failure);
+                        tell(minecraft, ChatFormat.error(CopyOutcome.FAILED.messageKey()));
+                        return;
+                    }
+
+                    tell(minecraft, outcome.succeeded()
+                            ? ChatFormat.info(outcome.messageKey())
+                            : ChatFormat.error(outcome.messageKey()));
+                }));
     }
 
     /**
@@ -364,6 +471,7 @@ public final class ShareController {
 
         helpLine(minecraft, "alascreen", "alascreen.command.help_last");
         helpLine(minecraft, "alascreen list", "alascreen.command.help_list");
+        helpLine(minecraft, "alascreen copyimage <id|last>", "alascreen.command.help_copy_image");
         helpLine(minecraft, "alascreen delete <id|last>", "alascreen.command.help_delete");
         helpLine(minecraft, "alascreen help", "alascreen.command.help_help");
     }

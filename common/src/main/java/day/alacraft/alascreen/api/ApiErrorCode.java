@@ -134,8 +134,21 @@ public enum ApiErrorCode {
         return this == RATE_LIMITED || this == SERVER_ERROR || this == OFFLINE || this == TIMEOUT;
     }
 
-    /** The translation key describing this failure to a player. */
+    /**
+     * The translation key describing this failure to a player.
+     *
+     * <p>Built from {@link #wireName()}, not from {@code name()}. The two agree
+     * for fourteen of the eighteen constants, which is exactly why the four that
+     * disagree went unnoticed: {@code OFFLINE} asked for
+     * {@code alascreen.error.offline} while every language file carries
+     * {@code network_offline}, so a player with no connection was shown the key
+     * itself instead of a sentence — as were {@code TIMEOUT}, {@code TLS} and
+     * {@code INTERNAL}. A missing key is not an error the game reports; it is
+     * text on screen. {@code LangCatalogTest.keysBuiltFromEnumNamesExistToo}
+     * now walks this enum, because a key assembled at runtime is invisible to
+     * any scan of the source.
+     */
     public String messageKey() {
-        return "alascreen.error." + name().toLowerCase(java.util.Locale.ROOT);
+        return "alascreen.error." + wireName;
     }
 }

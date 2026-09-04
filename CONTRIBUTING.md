@@ -47,9 +47,9 @@ loader module is an entrypoint and a handful of lines.
 
 ## Translations
 
-Language files live in `common/src/main/resources/assets/alascreen/lang/`. Seven
+Language files live in `common/src/main/resources/assets/alascreen/lang/`. Nine
 locales ship today: `en_us`, `ru_ru`, `uk_ua`, `de_de`, `fr_fr`, `es_es`,
-`ja_jp`.
+`ja_jp`, `zh_cn`, `pt_br`.
 
 Every file must carry the **same set of keys** — a missing key falls back to the
 key name and reaches the player as `alascreen.chat.uploaded`. Use indexed

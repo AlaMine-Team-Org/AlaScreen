@@ -65,6 +65,20 @@ public final class CommandTree {
                                             StringArgumentType.getString(context, "file"));
                                     return 1;
                                 })))
+                // Run by the [copy image] button, and usable by hand. A bare
+                // `copyimage` takes the last upload — the same shorthand `delete`
+                // accepts, and the one a player reaches for after taking a shot.
+                .then(LiteralArgumentBuilder.<S>literal("copyimage")
+                        .executes(context -> {
+                            controller.copyImage(Minecraft.getInstance(), "last");
+                            return 1;
+                        })
+                        .then(RequiredArgumentBuilder.<S, String>argument("id", StringArgumentType.word())
+                                .executes(context -> {
+                                    controller.copyImage(Minecraft.getInstance(),
+                                            StringArgumentType.getString(context, "id"));
+                                    return 1;
+                                })))
                 // Bare `delete <id>` only ASKS; the deletion itself is behind
                 // `confirm`, so a mis-click on a chat line cannot destroy a link
                 // other people may already hold.

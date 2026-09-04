@@ -108,7 +108,7 @@ else
     bad "the icon is missing from the jar"
 fi
 
-for lang in en_us ru_ru uk_ua de_de fr_fr es_es ja_jp; do
+for lang in en_us ru_ru uk_ua de_de fr_fr es_es ja_jp zh_cn pt_br; do
     if printf '%s' "$LIST" | grep -q "assets/alascreen/lang/$lang.json"; then
         ok "translation $lang"
     else

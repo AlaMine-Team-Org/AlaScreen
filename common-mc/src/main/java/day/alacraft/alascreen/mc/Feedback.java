@@ -27,21 +27,40 @@ public final class Feedback {
     }
 
     /**
-     * The success line: one sentence, the link, and the three things you might
-     * want to do with it.
+     * The success line: one sentence, the link, and the things you might want to
+     * do with it.
      *
      * <p>Everything on one line on purpose. A four-line block for a successful
      * screenshot is spam, and the chat is also the game.
+     *
+     * <p>Two copy buttons need two labels. While there was one, "copy" could
+     * only mean the link; next to a second it means nothing on its own, so the
+     * older button says {@code [copy link]} now.
+     *
+     * @param localCopyExists whether a file for this shot is on disk. The
+     *                        picture is copied from there — after the upload the
+     *                        mod holds no pixels — so without a file the button
+     *                        would be one that cannot work.
      */
-    public static Component uploaded(UploadResult result) {
+    public static Component uploaded(UploadResult result, boolean localCopyExists) {
         MutableComponent line = ChatFormat.info("alascreen.chat.uploaded")
                 .append(ChatFormat.link(result.url()))
                 .append(ChatFormat.space())
                 .append(ChatFormat.urlButton("alascreen.button.open",
                         "alascreen.button.open.hover", result.url()))
                 .append(ChatFormat.space())
-                .append(ChatFormat.copyButton("alascreen.button.copy",
-                        "alascreen.button.copy.hover", result.url()));
+                .append(ChatFormat.copyButton("alascreen.button.copy_link",
+                        "alascreen.button.copy_link.hover", result.url()));
+
+        // Vanilla's copy-to-clipboard click action handles text and nothing
+        // else, and it never calls back into the mod. The picture therefore has
+        // to travel the same road as [share]: a client command we own.
+        if (localCopyExists) {
+            line.append(ChatFormat.space())
+                    .append(ChatFormat.button("alascreen.button.copy_image",
+                            "alascreen.button.copy_image.hover",
+                            "alascreen copyimage " + result.id()));
+        }
 
         // The delete button is only offered when a token came back — a button
         // that cannot work is worse than no button.

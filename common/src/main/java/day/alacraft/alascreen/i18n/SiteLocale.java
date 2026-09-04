@@ -11,7 +11,7 @@ import java.util.Locale;
  * resolved before it is sent. Ala Screen is a client mod: whoever reads the
  * message has the mod, so every player-facing string is an ordinary
  * {@code Component.translatable} resolved by the game against
- * {@code assets/alascreen/lang/}. That gives us seven languages for free, plus
+ * {@code assets/alascreen/lang/}. That gives us nine languages for free, plus
  * the player's own resource-pack overrides, and leaves only one thing the game
  * cannot answer — which locale to put in the link.
  *
@@ -29,6 +29,7 @@ public final class SiteLocale {
             {"fr", "fr"},
             {"es", "es"},
             {"ja", "ja"},
+            {"zh", "zh"},
             {"en", "en"},
     };
 
@@ -42,9 +43,11 @@ public final class SiteLocale {
      *
      * <p>Matched on the language half alone, so the regional variants clients
      * actually report — {@code de_at}, {@code es_mx}, {@code en_gb} — reach the
-     * right page instead of falling back to English. Anything we do not serve
-     * ({@code pt_br}, {@code zh_cn}) gets English, which is the site's own
-     * fallback too.
+     * right page instead of falling back to English. That also means
+     * {@code zh_tw} lands on the site's Simplified Chinese page: the site has
+     * no Traditional variant, and a Simplified page beats an English one for a
+     * Chinese-reading player. Anything we do not serve at all ({@code pt_br})
+     * gets English, which is the site's own fallback too.
      */
     public static String of(String minecraftLanguage) {
         if (minecraftLanguage == null || minecraftLanguage.isBlank()) {

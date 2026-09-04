@@ -8,7 +8,7 @@ Saved screenshot as 2026-08-29_17.42.01.png [share]     <- vanilla F2, plus one 
 [Ala Screen] Also saved as 2026-08-29_17.42.01.png
    -> the shot appears, with "Upload  /  Save without uploading  /  Cancel"
 [Ala Screen] Uploading 2026-08-29_17.42.01.png (2.4 MB)...
-[Ala Screen] Screenshot uploaded: alacraft.day/en/screenshots/aB3xY9kM [open] [copy] [delete]
+[Ala Screen] Screenshot uploaded: alacraft.day/en/screenshots/aB3xY9kM [open] [copy link] [copy image] [delete]
 ```
 
 You see the frame before it leaves the machine. Then it goes to
@@ -22,7 +22,7 @@ picture itself.
   carry chat, an F3 overlay, a server address or someone's name, and no regular
   expression will find them — so the default is a preview and a question. It can
   be turned off; it is not off for you.
-- **Seven languages.** Every line the mod prints follows the client's language,
+- **Nine languages.** Every line the mod prints follows the client's language,
   and so does the link: a Russian player is handed `/ru/screenshots/...`, not the
   English page.
 - **It says what it is doing.** Taking, saving, uploading, done. A key that sits
@@ -33,6 +33,9 @@ picture itself.
 - **A local copy, as always.** The file still lands in `screenshots/`, named the
   way vanilla names them. Pressing a screenshot key and ending up with no file
   would astonish anyone.
+- **The picture on the clipboard, not just the link.** `[copy image]` puts the
+  shot itself there, so it can be pasted straight into a chat client without
+  opening the page first.
 - **Deleting your own upload survives a restart.** The delete token is kept on
   disk, so the link you shared this morning is still yours tonight.
 - **Nothing is uploaded on its own.** A screenshot leaves the machine when
@@ -71,7 +74,7 @@ Requires JDK 25.
 
 ```bash
 ./gradlew :fabric:build :neoforge:build   # jars in <loader>/build/libs/
-./gradlew :common:test                    # 37 unit tests, no game needed
+./gradlew :common:test                    # 54 unit tests, no game needed
 ./gradlew :fabric:runClient               # dev client (or :neoforge:runClient)
 python3 tools/loader_parity_check.py      # the entrypoints still agree
 ```

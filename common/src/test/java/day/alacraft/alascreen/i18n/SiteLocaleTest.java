@@ -22,6 +22,7 @@ class SiteLocaleTest {
         assertEquals("fr", SiteLocale.of("fr_fr"));
         assertEquals("es", SiteLocale.of("es_es"));
         assertEquals("ja", SiteLocale.of("ja_jp"));
+        assertEquals("zh", SiteLocale.of("zh_cn"));
     }
 
     @Test
@@ -42,9 +43,17 @@ class SiteLocaleTest {
     }
 
     @Test
+    void traditionalChineseFallsBackToTheSimplifiedPage() {
+        // The site has no zh-Hant version. Simplified still beats English for
+        // a Chinese-reading player, so zh_tw and zh_hk join zh_cn rather than
+        // falling all the way back to en.
+        assertEquals("zh", SiteLocale.of("zh_tw"));
+        assertEquals("zh", SiteLocale.of("zh_hk"));
+    }
+
+    @Test
     void unservedLanguagesFallBackToEnglish() {
         assertEquals("en", SiteLocale.of("pt_br"));
-        assertEquals("en", SiteLocale.of("zh_cn"));
         assertEquals("en", SiteLocale.of("lol_us"));
     }
 
