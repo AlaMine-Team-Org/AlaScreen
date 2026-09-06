@@ -73,6 +73,20 @@ public final class Config {
     public boolean persistHistory = true;
 
     /**
+     * Show a small plaque with the shot after vanilla saves a screenshot.
+     *
+     * <p>On by default: without it F2 leaves only a chat line, and acting on that
+     * line means opening the chat and reaching for the mouse. The plaque shows
+     * what was captured and names the key that shares it.
+     *
+     * <p>One flag rather than several. The market for this kind of notification
+     * asks to remove it, not to move it — so there is no position setting and no
+     * duration setting either: the duration is the game's own, including the
+     * player's Notification Time accessibility multiplier.
+     */
+    public boolean toastAfterCapture = true;
+
+    /**
      * Downscale anything wider or taller than this before uploading. 0 keeps the
      * original size.
      *
@@ -97,6 +111,7 @@ public final class Config {
                 config.copyLinkToClipboard = bool(json, "copyLinkToClipboard", config.copyLinkToClipboard);
                 config.saveLocalCopy = bool(json, "saveLocalCopy", config.saveLocalCopy);
                 config.persistHistory = bool(json, "persistHistory", config.persistHistory);
+                config.toastAfterCapture = bool(json, "toastAfterCapture", config.toastAfterCapture);
                 config.maxUploadSide = integer(json, "maxUploadSide", config.maxUploadSide);
             }
 
@@ -122,6 +137,7 @@ public final class Config {
         json.addProperty("copyLinkToClipboard", copyLinkToClipboard);
         json.addProperty("saveLocalCopy", saveLocalCopy);
         json.addProperty("persistHistory", persistHistory);
+        json.addProperty("toastAfterCapture", toastAfterCapture);
         json.addProperty("maxUploadSide", maxUploadSide);
 
         Path parent = file.getParent();

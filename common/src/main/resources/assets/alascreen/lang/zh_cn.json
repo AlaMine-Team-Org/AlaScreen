@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[是，删除]",
   "alascreen.button.confirm_delete.hover": "永久从网站删除",
   "alascreen.button.cancel": "[取消]",
-  "alascreen.button.cancel.hover": "保持原样"
+  "alascreen.button.cancel.hover": "保持原样",
+  "alascreen.toast.saved": "截图已保存",
+  "alascreen.toast.hint": "%1$s：查看并分享",
+  "alascreen.toast.hint_unbound": "请为 Ala Screen 设置按键以分享"
 }

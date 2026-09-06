@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[oui, supprimer]",
   "alascreen.button.confirm_delete.hover": "Supprimer definitivement du site",
   "alascreen.button.cancel": "[annuler]",
-  "alascreen.button.cancel.hover": "Ne rien faire"
+  "alascreen.button.cancel.hover": "Ne rien faire",
+  "alascreen.toast.saved": "Capture enregistrée",
+  "alascreen.toast.hint": "%1$s : vérifier et partager",
+  "alascreen.toast.hint_unbound": "Attribuez une touche à Ala Screen pour partager"
 }

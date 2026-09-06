@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[так, видалити]",
   "alascreen.button.confirm_delete.hover": "Видалити з сайту назавжди",
   "alascreen.button.cancel": "[скасувати]",
-  "alascreen.button.cancel.hover": "Залишити як є"
+  "alascreen.button.cancel.hover": "Залишити як є",
+  "alascreen.toast.saved": "Знімок збережено",
+  "alascreen.toast.hint": "%1$s: перевірити та надіслати",
+  "alascreen.toast.hint_unbound": "Призначте клавішу Ala Screen, щоб надіслати"
 }

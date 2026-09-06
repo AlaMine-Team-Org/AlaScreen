@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[да, удалить]",
   "alascreen.button.confirm_delete.hover": "Удалить с сайта безвозвратно",
   "alascreen.button.cancel": "[отмена]",
-  "alascreen.button.cancel.hover": "Оставить как есть"
+  "alascreen.button.cancel.hover": "Оставить как есть",
+  "alascreen.toast.saved": "Скриншот сохранён",
+  "alascreen.toast.hint": "%1$s: проверить и отправить",
+  "alascreen.toast.hint_unbound": "Назначьте клавишу Ala Screen, чтобы отправить"
 }

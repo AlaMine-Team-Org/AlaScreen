@@ -53,7 +53,15 @@ class SiteLocaleTest {
 
     @Test
     void unservedLanguagesFallBackToEnglish() {
+        // The mod is translated into more languages than the site serves, and
+        // that is fine: a Polish player reads Polish in the chat and lands on
+        // the English page, which is the site's own fallback. What is not fine
+        // is inventing a segment the site does not have — /pl/ is a 404.
         assertEquals("en", SiteLocale.of("pt_br"));
+        assertEquals("en", SiteLocale.of("pl_pl"));
+        assertEquals("en", SiteLocale.of("tr_tr"));
+        assertEquals("en", SiteLocale.of("cs_cz"));
+        assertEquals("en", SiteLocale.of("th_th"));
         assertEquals("en", SiteLocale.of("lol_us"));
     }
 

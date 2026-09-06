@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[yes, delete]",
   "alascreen.button.confirm_delete.hover": "Delete it from the site permanently",
   "alascreen.button.cancel": "[cancel]",
-  "alascreen.button.cancel.hover": "Leave it where it is"
+  "alascreen.button.cancel.hover": "Leave it where it is",
+  "alascreen.toast.saved": "Screenshot saved",
+  "alascreen.toast.hint": "%1$s: check and share",
+  "alascreen.toast.hint_unbound": "Bind the Ala Screen key to share it"
 }

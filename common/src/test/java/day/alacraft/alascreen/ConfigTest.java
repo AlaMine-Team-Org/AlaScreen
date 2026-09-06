@@ -32,6 +32,8 @@ class ConfigTest {
                 "asking before an upload is the mod's one safety feature; it must default on");
         assertTrue(config.saveLocalCopy);
         assertTrue(config.persistHistory);
+        assertTrue(config.toastAfterCapture,
+                "the plaque is what makes F2 lead anywhere without opening the chat");
         assertFalse(config.hasApiToken());
         assertEquals(0, config.maxUploadSide);
     }
@@ -57,6 +59,7 @@ class ConfigTest {
         written.copyLinkToClipboard = false;
         written.saveLocalCopy = false;
         written.persistHistory = false;
+        written.toastAfterCapture = false;
         written.maxUploadSide = 2560;
         written.save(file);
 
@@ -68,6 +71,7 @@ class ConfigTest {
         assertFalse(read.copyLinkToClipboard);
         assertFalse(read.saveLocalCopy);
         assertFalse(read.persistHistory);
+        assertFalse(read.toastAfterCapture);
         assertEquals(2560, read.maxUploadSide);
     }
 

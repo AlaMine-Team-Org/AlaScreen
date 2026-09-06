@@ -115,6 +115,9 @@ public class AlaScreenNeoForge {
     private static void registerKeys(RegisterKeyMappingsEvent event) {
         event.registerCategory(CATEGORY);
         event.register(SHARE_KEY);
+
+        // As on Fabric: the plaque names the key, so it has to be told which one.
+        controller.useShareKey(SHARE_KEY);
     }
 
     /**
@@ -137,8 +140,10 @@ public class AlaScreenNeoForge {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         while (SHARE_KEY.consumeClick()) {
-            controller.captureAndShare(net.minecraft.client.Minecraft.getInstance());
+            controller.onShareKey(net.minecraft.client.Minecraft.getInstance());
         }
+
+        controller.clientTick(net.minecraft.client.Minecraft.getInstance());
     }
 
     /**

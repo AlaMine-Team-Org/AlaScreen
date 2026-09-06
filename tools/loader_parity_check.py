@@ -70,7 +70,9 @@ REQUIRED_CALLS = [
     ("CommandTree.build(", "the command tree is not registered, so /alascreen does not exist"),
     ("service.warmUp()", "limits are never fetched, so uploads are refused instead of downscaled"),
     ("consumeClick()", "the key is never polled, so pressing it does nothing"),
-    ("captureAndShare(", "the keypress leads nowhere"),
+    ("onShareKey(", "the keypress leads nowhere"),
+    ("useShareKey(", "the plaque cannot name the share key, so it tells a bound key it is unbound"),
+    ("clientTick(", "the plaque's texture is never released, leaking native memory on every world exit"),
     ("buildApi(", "there is no API client, so there is nowhere to upload"),
 ]
 

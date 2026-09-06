@@ -8,6 +8,7 @@ import day.alacraft.alascreen.clipboard.ImageClipboard;
 import day.alacraft.alascreen.history.UploadRecord;
 import day.alacraft.alascreen.i18n.SiteLocale;
 import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -53,6 +54,16 @@ public final class ShareController {
      */
     private final AtomicBoolean copying = new AtomicBoolean();
 
+    /**
+     * The share key, once a loader has registered it.
+     *
+     * <p>Only for naming it: the plaque has to say which key shares the shot, and
+     * "press the Ala Screen key" is not an answer when the player has rebound it.
+     * Null until an entrypoint hands it over, and the plaque says so rather than
+     * guessing.
+     */
+    private KeyMapping shareKey;
+
     public ShareController(Config config,
                            UploadService service,
                            Path configFile,
@@ -61,6 +72,91 @@ public final class ShareController {
         this.service = service;
         this.configFile = configFile;
         this.screenshotsDirectory = screenshotsDirectory;
+
+        // Registered here rather than from each entrypoint: this constructor runs
+        // on both loaders by construction, so the plaque cannot exist on one and
+        // be forgotten on the other.
+        ScreenshotHook.whenSaved(this::offerSaved);
+    }
+
+    /** Tell the controller which key shares a shot, so the plaque can name it. */
+    public void useShareKey(KeyMapping key) {
+        this.shareKey = key;
+    }
+
+    /**
+     * What the share key does, which depends on whether a plaque is up.
+     *
+     * <p>While the plaque is on screen the key shares the shot it is showing;
+     * otherwise it takes a new one. That is not an overloaded key for the sake of
+     * it — it is the only way a plaque can offer an action at all. With no screen
+     * open the cursor is captured by the game and has no screen position, so
+     * mouse input never reaches a toast; a key press is the only input that
+     * arrives exactly while the plaque is visible.
+     *
+     * <p>It also settles the oldest problem with screenshot overlays: the plaque
+     * is taken down before any new capture, so it cannot be photographed by the
+     * next shot.
+     */
+    public void onShareKey(Minecraft minecraft) {
+        Optional<String> offered = SharePrompt.armedFileName();
+
+        if (offered.isPresent()) {
+            SharePrompt.dismiss();
+            uploadExisting(minecraft, offered.get());
+            return;
+        }
+
+        SharePrompt.dismiss();
+        captureAndShare(minecraft);
+    }
+
+    /**
+     * Housekeeping for the plaque. Call once per client tick.
+     *
+     * <p>The picture behind the plaque is native memory and a GPU texture, and
+     * the toast cannot free them itself: leaving a world throws every toast away
+     * without telling it. So the release happens here, off the render path.
+     */
+    public void clientTick(Minecraft minecraft) {
+        SharePrompt.tick(minecraft);
+    }
+
+    /**
+     * Vanilla just saved a screenshot: offer it on a plaque.
+     *
+     * <p>Reached from the F2 path only, which is the one that needs it. Our own
+     * key either opens the confirmation screen — which already shows the frame,
+     * far larger — or uploads straight away, and a plaque about a shot that is
+     * already on its way would say nothing useful.
+     *
+     * <p>Runs on vanilla's io thread, so nothing here may touch the game
+     * directly; {@link SharePrompt#show} hops to the client thread itself.
+     */
+    private void offerSaved(java.io.File file) {
+        if (!config.toastAfterCapture) {
+            return;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+
+        if (minecraft == null) {
+            return;
+        }
+
+        // F2 works in the main menu too, and a plaque there would be a lie: the
+        // key it names is only polled while no screen is open, so in a menu the
+        // instruction cannot be followed. The chat line keeps its share button.
+        if (minecraft.level == null) {
+            return;
+        }
+
+        Component hint = shareKey == null || shareKey.isUnbound()
+                ? Component.translatable("alascreen.toast.hint_unbound")
+                : Component.translatable("alascreen.toast.hint", shareKey.getTranslatedKeyMessage());
+
+        SharePrompt.show(minecraft, file.toPath(),
+                Component.translatable("alascreen.toast.saved"), hint);
     }
 
     /**

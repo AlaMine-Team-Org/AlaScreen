@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[ja, loeschen]",
   "alascreen.button.confirm_delete.hover": "Endgueltig von der Seite loeschen",
   "alascreen.button.cancel": "[abbrechen]",
-  "alascreen.button.cancel.hover": "So lassen, wie es ist"
+  "alascreen.button.cancel.hover": "So lassen, wie es ist",
+  "alascreen.toast.saved": "Screenshot gespeichert",
+  "alascreen.toast.hint": "%1$s: prüfen und teilen",
+  "alascreen.toast.hint_unbound": "Belege eine Taste für Ala Screen zum Teilen"
 }

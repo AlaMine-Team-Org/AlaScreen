@@ -32,7 +32,26 @@ public final class ScreenshotHook {
     /** The vanilla key for "Saved screenshot as %s". */
     private static final String SUCCESS_KEY = "screenshot.success";
 
+    /**
+     * Told about every screenshot vanilla saves, so the mod can offer it.
+     *
+     * <p>A listener rather than a parameter because the injection is a mixin,
+     * one per loader, and threading a dependency through both would be two
+     * places to forget it. {@link ShareController} registers itself when it is
+     * built, which happens on both loaders by construction.
+     *
+     * <p><b>Called off the render thread.</b> Vanilla runs this consumer inside
+     * its io pool, right after the file is written — anything touching the game
+     * has to hop threads itself.
+     */
+    private static Consumer<File> savedListener = file -> { };
+
     private ScreenshotHook() {
+    }
+
+    /** Register the listener that is offered each saved screenshot. */
+    public static void whenSaved(Consumer<File> listener) {
+        savedListener = listener == null ? file -> { } : listener;
     }
 
     /**
@@ -72,6 +91,12 @@ public final class ScreenshotHook {
                 // like the mod is broken rather than absent.
                 return message;
             }
+
+            // The plaque is offered the same file the button points at, and only
+            // once we know there is one. Failures here are swallowed with the
+            // rest: a broken thumbnail must not turn a saved screenshot into a
+            // crash inside vanilla's own screenshot path.
+            savedListener.accept(file);
 
             // A fresh, unstyled parent. Appending to the vanilla component would
             // make our button inherit its click event — the one that opens the

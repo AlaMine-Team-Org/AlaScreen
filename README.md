@@ -22,7 +22,12 @@ picture itself.
   carry chat, an F3 overlay, a server address or someone's name, and no regular
   expression will find them — so the default is a preview and a question. It can
   be turned off; it is not off for you.
-- **Nine languages.** Every line the mod prints follows the client's language,
+- **F2 shows you what it caught.** Vanilla saves the file and says so in chat;
+  the mod adds a small plaque in the corner with the shot itself and the key that
+  shares it. No reaching for the mouse, and no wondering which of six screenshots
+  the chat line means. It goes away on its own, respects your Notification Time
+  setting, and is one line in the config away from never appearing.
+- **Thirteen languages.** Every line the mod prints follows the client's language,
   and so does the link: a Russian player is handed `/ru/screenshots/...`, not the
   English page.
 - **It says what it is doing.** Taking, saving, uploading, done. A key that sits

@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[はい、削除]",
   "alascreen.button.confirm_delete.hover": "サイトから完全に削除します",
   "alascreen.button.cancel": "[キャンセル]",
-  "alascreen.button.cancel.hover": "そのままにします"
+  "alascreen.button.cancel.hover": "そのままにします",
+  "alascreen.toast.saved": "スクリーンショットを保存しました",
+  "alascreen.toast.hint": "%1$s: 確認して共有",
+  "alascreen.toast.hint_unbound": "共有するには Ala Screen のキーを設定してください"
 }

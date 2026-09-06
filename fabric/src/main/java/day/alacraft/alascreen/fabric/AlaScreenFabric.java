@@ -69,14 +69,21 @@ public class AlaScreenFabric implements ClientModInitializer {
 
         KeyMapping shareKey = registerKey();
 
+        // So the plaque after a screenshot can name the key rather than describe
+        // it: the player may have rebound it, and "press the Ala Screen key" is
+        // not an instruction anyone can follow.
+        controller.useShareKey(shareKey);
+
         // Poll at the end of the tick rather than reacting inside an input
         // handler: consumeClick() is the vanilla way to ask "was this pressed
         // since I last looked", and it is what stops a held key from firing
         // every frame.
         ClientTickEvents.END_CLIENT_TICK.register(minecraft -> {
             while (shareKey.consumeClick()) {
-                controller.captureAndShare(minecraft);
+                controller.onShareKey(minecraft);
             }
+
+            controller.clientTick(minecraft);
         });
 
         registerCommands();

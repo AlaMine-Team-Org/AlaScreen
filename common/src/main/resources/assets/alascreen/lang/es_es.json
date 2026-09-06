@@ -67,5 +67,8 @@
   "alascreen.button.confirm_delete": "[si, eliminar]",
   "alascreen.button.confirm_delete.hover": "Eliminarla del sitio para siempre",
   "alascreen.button.cancel": "[cancelar]",
-  "alascreen.button.cancel.hover": "Dejarla como esta"
+  "alascreen.button.cancel.hover": "Dejarla como esta",
+  "alascreen.toast.saved": "Captura guardada",
+  "alascreen.toast.hint": "%1$s: revisar y compartir",
+  "alascreen.toast.hint_unbound": "Asigna una tecla de Ala Screen para compartir"
 }
