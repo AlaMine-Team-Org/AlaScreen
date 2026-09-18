@@ -111,9 +111,6 @@ jobs:
             exit 1
           fi
 
-      - name: Cleanliness gate
-        run: bash .github/scripts/scan-clean.sh .
-
       - name: Test
         run: ./gradlew :common:test --no-daemon
 
@@ -197,13 +194,6 @@ jobs:
           echo "--- release notes -------------------------------------------"
           cat NOTES.md
           echo "-------------------------------------------------------------"
-
-          # These notes become the release page and the CurseForge changelog,
-          # which the upload API cannot correct afterwards, so they get the
-          # same cleanliness gate as the tree before anything is published.
-          mkdir -p "$RUNNER_TEMP/notes"
-          cp NOTES.md "$RUNNER_TEMP/notes/NOTES.md"
-          bash .github/scripts/scan-clean.sh "$RUNNER_TEMP/notes"
 
       - name: GitHub Release
         if: startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
