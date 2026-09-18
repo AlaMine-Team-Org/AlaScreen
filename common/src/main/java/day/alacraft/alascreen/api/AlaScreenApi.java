@@ -120,6 +120,39 @@ public final class AlaScreenApi implements AutoCloseable {
     }
 
     /**
+     * The base URL as the client will use it, or empty when it cannot be used.
+     *
+     * <p>One answer for two callers that want opposite things when it is no. The
+     * config stands the default in and carries on, because the game has to start
+     * with a typo in the file; the builder refuses, because a client pointed at
+     * nothing is not a client. Both ask this method, so the config can never hand
+     * the builder an address it would throw on.
+     */
+    public static Optional<String> usableBaseUrl(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            return Optional.empty();
+        }
+
+        String trimmed = baseUrl.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+
+        String scheme = trimmed.toLowerCase(Locale.ROOT);
+        if (!scheme.startsWith("http://") && !scheme.startsWith("https://")) {
+            return Optional.empty();
+        }
+
+        try {
+            URI.create(trimmed);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+
+        return Optional.of(trimmed);
+    }
+
+    /**
      * The User-Agent the site asks automated clients to send, e.g.
      * {@code AlaScreen/0.1.0 (Minecraft 26.2; fabric)}.
      *
@@ -453,26 +486,11 @@ public final class AlaScreenApi implements AutoCloseable {
         private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
 
         private Builder(String baseUrl) {
-            if (baseUrl == null || baseUrl.isBlank()) {
-                throw new IllegalArgumentException("The API base URL cannot be empty.");
-            }
-
-            String trimmed = baseUrl.trim();
-            while (trimmed.endsWith("/")) {
-                trimmed = trimmed.substring(0, trimmed.length() - 1);
-            }
-
-            String scheme = trimmed.toLowerCase(Locale.ROOT);
-            if (!scheme.startsWith("http://") && !scheme.startsWith("https://")) {
-                throw new IllegalArgumentException("The API base URL must start with http:// or https://.");
-            }
-
-            // Fail here rather than at the first upload: a malformed URL in the
-            // config should be reported while the game is starting, not when the
-            // player presses the key.
-            URI.create(trimmed);
-
-            this.baseUrl = trimmed;
+            // Fail here rather than at the first upload: a malformed URL should
+            // be reported while the game is starting, not when the player presses
+            // the key.
+            this.baseUrl = usableBaseUrl(baseUrl).orElseThrow(() -> new IllegalArgumentException(
+                    "The API base URL must be an http:// or https:// address, not \"" + baseUrl + "\"."));
         }
 
         public Builder userAgent(String userAgent) {

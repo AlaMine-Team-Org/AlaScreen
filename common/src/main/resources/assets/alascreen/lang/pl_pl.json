@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "Następnym razem wyśle od razu. Pytanie można włączyć z powrotem w konfiguracji.",
   "alascreen.error.invalid_image": "Strona nie potrafiła odczytać tego jako obrazu.",
   "alascreen.error.unsupported_format": "Ten format obrazu nie jest akceptowany.",
-  "alascreen.error.image_too_large_px": "Ten zrzut ma za dużo pikseli (%1$s x %2$s). Ustaw maxUploadSide w konfiguracji, aby zmniejszyć go przed wysłaniem.",
+  "alascreen.error.image_too_large_px": "Ten zrzut ma za dużo pikseli (%1$s x %2$s).",
   "alascreen.error.too_large": "Ten zrzut jest za duży (%1$s). Limit to %2$s.",
   "alascreen.error.invalid_request": "Strona odrzuciła żądanie.",
   "alascreen.error.invalid_token": "Strona odrzuciła twój token API. Sprawdź go w konfiguracji.",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "Zostaw go tam, gdzie jest",
   "alascreen.toast.saved": "Zrzut zapisany",
   "alascreen.toast.hint": "%1$s: sprawdź i udostępnij",
-  "alascreen.toast.hint_unbound": "Przypisz klawisz Ala Screen, aby udostępnić"
+  "alascreen.toast.hint_unbound": "Przypisz klawisz Ala Screen, aby udostępnić",
+  "alascreen.annotate.open": "Oznacz",
+  "alascreen.annotate.close": "Ukryj narzędzia",
+  "alascreen.annotate.arrow": "Strzałka",
+  "alascreen.annotate.frame": "Ramka",
+  "alascreen.annotate.pen": "Pióro",
+  "alascreen.annotate.redact": "Zakryj: pełny blok ukrywa współrzędne, nicki lub czat",
+  "alascreen.annotate.undo": "Cofnij (Ctrl+Z)",
+  "alascreen.annotate.clear": "Usuń wszystkie oznaczenia",
+  "alascreen.error.annotate_failed": "Nie udało się nanieść oznaczeń. Nic nie zostało wysłane ani zapisane."
 }

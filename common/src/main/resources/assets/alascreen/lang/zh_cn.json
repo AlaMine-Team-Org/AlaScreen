@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "下次将直接上传。可以在配置中重新打开此确认。",
   "alascreen.error.invalid_image": "网站无法将其识别为图片。",
   "alascreen.error.unsupported_format": "不支持该图片格式。",
-  "alascreen.error.image_too_large_px": "该截图像素过多 (%1$s x %2$s)。请在配置中设置 maxUploadSide，在上传前将其缩小。",
+  "alascreen.error.image_too_large_px": "该截图像素过多 (%1$s x %2$s)。",
   "alascreen.error.too_large": "该截图过大 (%1$s)，限制为 %2$s。",
   "alascreen.error.invalid_request": "网站拒绝了该请求。",
   "alascreen.error.invalid_token": "网站拒绝了你的 API 令牌，请在配置中检查。",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "保持原样",
   "alascreen.toast.saved": "截图已保存",
   "alascreen.toast.hint": "%1$s：查看并分享",
-  "alascreen.toast.hint_unbound": "请为 Ala Screen 设置按键以分享"
+  "alascreen.toast.hint_unbound": "请为 Ala Screen 设置按键以分享",
+  "alascreen.annotate.open": "标注",
+  "alascreen.annotate.close": "隐藏工具",
+  "alascreen.annotate.arrow": "箭头",
+  "alascreen.annotate.frame": "方框",
+  "alascreen.annotate.pen": "画笔",
+  "alascreen.annotate.redact": "遮盖：用实心块隐藏坐标、名字或聊天",
+  "alascreen.annotate.undo": "撤销 (Ctrl+Z)",
+  "alascreen.annotate.clear": "清除所有标注",
+  "alascreen.error.annotate_failed": "无法应用标注，未发送也未保存任何内容。"
 }

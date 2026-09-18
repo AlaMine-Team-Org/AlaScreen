@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "Příště nahraje rovnou. Dotaz můžeš znovu zapnout v konfiguraci.",
   "alascreen.error.invalid_image": "Stránka to nedokázala přečíst jako obrázek.",
   "alascreen.error.unsupported_format": "Tento formát obrázku není přijímán.",
-  "alascreen.error.image_too_large_px": "Tento snímek má příliš mnoho pixelů (%1$s x %2$s). Nastav maxUploadSide v konfiguraci, aby se před nahráním zmenšil.",
+  "alascreen.error.image_too_large_px": "Tento snímek má příliš mnoho pixelů (%1$s x %2$s).",
   "alascreen.error.too_large": "Tento snímek je příliš velký (%1$s). Limit je %2$s.",
   "alascreen.error.invalid_request": "Stránka požadavek odmítla.",
   "alascreen.error.invalid_token": "Stránka odmítla tvůj API token. Zkontroluj ho v konfiguraci.",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "Nechat ho tam, kde je",
   "alascreen.toast.saved": "Snímek uložen",
   "alascreen.toast.hint": "%1$s: zkontrolovat a sdílet",
-  "alascreen.toast.hint_unbound": "Přiřaď klávesu Ala Screen pro sdílení"
+  "alascreen.toast.hint_unbound": "Přiřaď klávesu Ala Screen pro sdílení",
+  "alascreen.annotate.open": "Označit",
+  "alascreen.annotate.close": "Skrýt nástroje",
+  "alascreen.annotate.arrow": "Šipka",
+  "alascreen.annotate.frame": "Rámeček",
+  "alascreen.annotate.pen": "Pero",
+  "alascreen.annotate.redact": "Zakrýt: plný blok skryje souřadnice, jména nebo chat",
+  "alascreen.annotate.undo": "Zpět (Ctrl+Z)",
+  "alascreen.annotate.clear": "Odstranit všechny značky",
+  "alascreen.error.annotate_failed": "Značky se nepodařilo použít. Nic nebylo odesláno ani uloženo."
 }

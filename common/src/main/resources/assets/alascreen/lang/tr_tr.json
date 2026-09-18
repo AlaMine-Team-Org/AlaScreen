@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "Bir dahaki sefere doğrudan yükler. Bu soruyu yapılandırmadan geri açabilirsin.",
   "alascreen.error.invalid_image": "Site bunu bir görsel olarak okuyamadı.",
   "alascreen.error.unsupported_format": "Bu görsel biçimi kabul edilmiyor.",
-  "alascreen.error.image_too_large_px": "Bu görüntüde çok fazla piksel var (%1$s x %2$s). Yüklemeden önce küçültmek için yapılandırmadaki maxUploadSide değerini ayarla.",
+  "alascreen.error.image_too_large_px": "Bu görüntüde çok fazla piksel var (%1$s x %2$s).",
   "alascreen.error.too_large": "Bu görüntü çok büyük (%1$s). Sınır %2$s.",
   "alascreen.error.invalid_request": "Site isteği reddetti.",
   "alascreen.error.invalid_token": "Site API anahtarını reddetti. Yapılandırmadan kontrol et.",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "Olduğu yerde bırak",
   "alascreen.toast.saved": "Ekran görüntüsü kaydedildi",
   "alascreen.toast.hint": "%1$s: kontrol et ve paylaş",
-  "alascreen.toast.hint_unbound": "Paylaşmak için Ala Screen tuşu ata"
+  "alascreen.toast.hint_unbound": "Paylaşmak için Ala Screen tuşu ata",
+  "alascreen.annotate.open": "İşaretle",
+  "alascreen.annotate.close": "Araçları gizle",
+  "alascreen.annotate.arrow": "Ok",
+  "alascreen.annotate.frame": "Çerçeve",
+  "alascreen.annotate.pen": "Kalem",
+  "alascreen.annotate.redact": "Kapat: düz bir blok koordinatları, adları veya sohbeti gizler",
+  "alascreen.annotate.undo": "Geri al (Ctrl+Z)",
+  "alascreen.annotate.clear": "Tüm işaretleri kaldır",
+  "alascreen.error.annotate_failed": "İşaretler uygulanamadı. Hiçbir şey gönderilmedi veya kaydedilmedi."
 }

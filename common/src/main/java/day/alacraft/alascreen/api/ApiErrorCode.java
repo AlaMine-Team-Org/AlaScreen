@@ -30,9 +30,10 @@ public enum ApiErrorCode {
     UNSUPPORTED_FORMAT("unsupported_format"),
 
     /**
-     * Too many pixels. Separate from {@link #TOO_LARGE} because the advice is
-     * different: a 16K panorama is refused however well it compresses, and the
-     * fix is to turn down {@code maxUploadSide}, not to re-encode.
+     * Too many pixels. Separate from {@link #TOO_LARGE} because the cause is
+     * different: a 16K panorama is refused however well it compresses. The mod
+     * shrinks every upload to the pixel cap the site publishes, so this arrives
+     * only when the site's cap is lower than the one the mod was working from.
      */
     IMAGE_TOO_LARGE_PX("image_too_large_px"),
 

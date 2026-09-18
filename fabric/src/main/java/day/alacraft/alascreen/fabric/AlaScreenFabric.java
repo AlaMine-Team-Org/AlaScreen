@@ -99,7 +99,7 @@ public class AlaScreenFabric implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STOPPING.register(minecraft -> api.close());
 
         AlaScreen.LOGGER.info("{} {} ready - press the Ala Screen key to share a screenshot with {}",
-                AlaScreen.MOD_NAME, BuildInfo.version(), config.apiBaseUrl);
+                AlaScreen.MOD_NAME, BuildInfo.version(), config.effectiveApiBaseUrl());
         AlaScreen.LOGGER.info("Config: {}", configFile);
     }
 
@@ -149,37 +149,21 @@ public class AlaScreenFabric implements ClientModInitializer {
     }
 
     /**
-     * Build the API client, surviving a typo in the config.
+     * Build the API client for the address the config resolves to.
      *
-     * <p>{@link Config} deliberately never fails the game over a broken config
-     * file, but the URL check lives in the client's builder — so a missing
-     * {@code https://} would throw out of {@code onInitializeClient()} and
-     * Fabric would refuse to load the mod at all. Losing uploads to a typo is a
-     * fair trade; losing the game is not.
+     * <p>{@link Config#effectiveApiBaseUrl()} already stands the default in for
+     * an address that cannot be used, so the builder is never handed one it
+     * throws on — thrown out of {@code onInitializeClient()}, that would make
+     * Fabric refuse to load the mod at all. The config is only read here: an
+     * earlier version wrote the fallback back into it, and the next save turned
+     * a self-hoster's address into ours.
      */
     private static AlaScreenApi buildApi(Config config, String minecraftVersion) {
-        String userAgent = AlaScreenApi.userAgent(BuildInfo.version(), minecraftVersion, "fabric");
-
-        try {
-            return AlaScreenApi.builder(config.apiBaseUrl)
-                    .userAgent(userAgent)
-                    .source(BuildInfo.sourceTag())
-                    .apiToken(config.apiToken)
-                    .build();
-        } catch (RuntimeException e) {
-            AlaScreen.LOGGER.error(
-                    "apiBaseUrl in the config is not a usable URL ({}): \"{}\". Falling back to {} - "
-                            + "fix the config and restart to use your own instance.",
-                    e.getMessage(), config.apiBaseUrl, AlaScreen.DEFAULT_API_BASE_URL);
-
-            config.apiBaseUrl = AlaScreen.DEFAULT_API_BASE_URL;
-
-            return AlaScreenApi.builder(AlaScreen.DEFAULT_API_BASE_URL)
-                    .userAgent(userAgent)
-                    .source(BuildInfo.sourceTag())
-                    .apiToken(config.apiToken)
-                    .build();
-        }
+        return AlaScreenApi.builder(config.effectiveApiBaseUrl())
+                .userAgent(AlaScreenApi.userAgent(BuildInfo.version(), minecraftVersion, "fabric"))
+                .source(BuildInfo.sourceTag())
+                .apiToken(config.apiToken)
+                .build();
     }
 
     /** The running Minecraft version, for the User-Agent we identify ourselves with. */

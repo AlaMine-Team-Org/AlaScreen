@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The translations, checked as a set rather than as thirteen separate files.
+ * The translations, checked as a set rather than as fourteen separate files.
  *
  * <p>A translation key is a string literal. The compiler never looks at it, and
  * the game does not fail on a missing one — it prints the key. So
  * {@code alascreen.button.copy_image} reaches a player as the literal text
  * "alascreen.button.copy_image", and only in the language nobody on the team
  * reads. Nothing else in this project catches that: the artifact gate checks
- * that the thirteen files are <em>inside the jar</em>, not what is inside them.
+ * that the fourteen files are <em>inside the jar</em>, not what is inside them.
  *
  * <p>Two things are therefore checked here — that every locale carries the same
  * keys as English, and that every key the code actually asks for exists at all.
@@ -37,15 +37,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LangCatalogTest {
 
     /**
-     * The thirteen locales the mod ships, named rather than discovered.
+     * The fourteen locales the mod ships, named rather than discovered.
      *
-     * <p>Named on purpose: a discovered list would silently accept a fourteenth file
+     * <p>Named on purpose: a discovered list would silently accept a fifteenth file
      * that nobody has reviewed, and silently accept the disappearance of one.
      * Adding a locale means editing this line, which is the point.
      */
     private static final List<String> LOCALES = List.of(
             "en_us", "ru_ru", "uk_ua", "de_de", "fr_fr", "es_es", "pt_br", "ja_jp", "zh_cn",
-            "pl_pl", "tr_tr", "cs_cz", "th_th");
+            "pl_pl", "tr_tr", "cs_cz", "th_th", "ko_kr");
 
     private static final Path LANG = Path.of("src/main/resources/assets/alascreen/lang");
 
@@ -63,14 +63,14 @@ class LangCatalogTest {
      * config file name {@code alascreen.json} out — and the mod has exactly one
      * two-segment key, {@code alascreen.prefix}, which sits at the head of every
      * single line this mod prints. The gate could not see it: deleting that key
-     * from all thirteen files left this check green. File names are excluded by
+     * from all fourteen files left this check green. File names are excluded by
      * their suffix in {@code keysIn} below, which is what was doing the work.
      */
     private static final Pattern KEY_IN_SOURCE = Pattern.compile(
             "\"((?:alascreen|key)\\.[a-z0-9_]+(?:\\.[a-z0-9_]+)*)\"");
 
     @Test
-    void theThirteenLocalesAreAllThereAndNothingElseIs() throws IOException {
+    void theFourteenLocalesAreAllThereAndNothingElseIs() throws IOException {
         Set<String> onDisk = new TreeSet<>();
 
         try (Stream<Path> files = Files.list(LANG)) {

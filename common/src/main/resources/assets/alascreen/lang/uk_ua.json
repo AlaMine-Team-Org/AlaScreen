@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "Наступного разу завантаження почнеться одразу. Повернути запитання можна в конфізі.",
   "alascreen.error.invalid_image": "Сайт не зміг прочитати це як зображення.",
   "alascreen.error.unsupported_format": "Такий формат зображення не приймається.",
-  "alascreen.error.image_too_large_px": "У знімку забагато пікселів (%1$s x %2$s). Задайте maxUploadSide у конфізі, щоб зменшувати його перед завантаженням.",
+  "alascreen.error.image_too_large_px": "У знімку забагато пікселів (%1$s x %2$s).",
   "alascreen.error.too_large": "Знімок завеликий (%1$s). Межа — %2$s.",
   "alascreen.error.invalid_request": "Сайт відхилив запит.",
   "alascreen.error.invalid_token": "Сайт відхилив ваш API-токен. Перевірте його в конфізі.",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "Залишити як є",
   "alascreen.toast.saved": "Знімок збережено",
   "alascreen.toast.hint": "%1$s: перевірити та надіслати",
-  "alascreen.toast.hint_unbound": "Призначте клавішу Ala Screen, щоб надіслати"
+  "alascreen.toast.hint_unbound": "Призначте клавішу Ala Screen, щоб надіслати",
+  "alascreen.annotate.open": "Розмітка",
+  "alascreen.annotate.close": "Сховати панель",
+  "alascreen.annotate.arrow": "Стрілка",
+  "alascreen.annotate.frame": "Рамка",
+  "alascreen.annotate.pen": "Олівець",
+  "alascreen.annotate.redact": "Замазка: суцільний блок приховує координати, ніки або чат",
+  "alascreen.annotate.undo": "Скасувати (Ctrl+Z)",
+  "alascreen.annotate.clear": "Прибрати всі позначки",
+  "alascreen.error.annotate_failed": "Не вдалося накласти позначки. Нічого не надіслано й не збережено."
 }

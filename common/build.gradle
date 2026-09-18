@@ -27,6 +27,16 @@ test {
         events 'failed'
         exceptionFormat = 'full'
     }
+
+    // LangCatalogTest and ArgbColorLintTest read the other modules' sources off
+    // the disk, which Gradle cannot see. Until these were declared, a change
+    // confined to common-mc left this task UP-TO-DATE: a colour broken in the
+    // toast went through a green build without either gate running.
+    [commonMcSources: 'common-mc', fabricSources: 'fabric', neoforgeSources: 'neoforge'].each { property, module ->
+        inputs.dir(rootProject.file("${module}/src/main/java"))
+                .withPropertyName(property)
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
 }
 
 // Hand the SOURCE directories to the loader modules rather than a jar — see

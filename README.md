@@ -27,7 +27,7 @@ picture itself.
   shares it. No reaching for the mouse, and no wondering which of six screenshots
   the chat line means. It goes away on its own, respects your Notification Time
   setting, and is one line in the config away from never appearing.
-- **Thirteen languages.** Every line the mod prints follows the client's language,
+- **Fourteen languages.** Every line the mod prints follows the client's language,
   and so does the link: a Russian player is handed `/ru/screenshots/...`, not the
   English page.
 - **It says what it is doing.** Taking, saving, uploading, done. A key that sits
@@ -79,7 +79,7 @@ Requires JDK 25.
 
 ```bash
 ./gradlew :fabric:build :neoforge:build   # jars in <loader>/build/libs/
-./gradlew :common:test                    # 54 unit tests, no game needed
+./gradlew :common:test                    # unit tests, no game needed
 ./gradlew :fabric:runClient               # dev client (or :neoforge:runClient)
 python3 tools/loader_parity_check.py      # the entrypoints still agree
 ```
@@ -100,7 +100,6 @@ layer, so that file is not optional reading.
 | `copyLinkToClipboard` | `true` | Put the link on the clipboard when it arrives |
 | `saveLocalCopy` | `true` | Also keep the file in `screenshots/` |
 | `persistHistory` | `true` | Remember upload ids and delete tokens across restarts |
-| `maxUploadSide` | `0` | Downscale huge captures before uploading; 0 keeps the original |
 
 The key binding defaults to **F7** — next to the screenshot key it belongs with,
 and free in 26.2 (F6 is not: it is the debug key). Rebind it under

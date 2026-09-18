@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "La próxima vez se subirá directamente. La pregunta se puede reactivar en la configuración.",
   "alascreen.error.invalid_image": "El sitio no pudo leer eso como una imagen.",
   "alascreen.error.unsupported_format": "Ese formato de imagen no se acepta.",
-  "alascreen.error.image_too_large_px": "Esa captura tiene demasiados píxeles (%1$s x %2$s). Ajusta maxUploadSide en la configuración para reducirla antes de subirla.",
+  "alascreen.error.image_too_large_px": "Esa captura tiene demasiados píxeles (%1$s x %2$s).",
   "alascreen.error.too_large": "Esa captura es demasiado grande (%1$s). El límite es %2$s.",
   "alascreen.error.invalid_request": "El sitio rechazó la petición.",
   "alascreen.error.invalid_token": "El sitio rechazó tu token de API. Revísalo en la configuración.",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "Dejarla como esta",
   "alascreen.toast.saved": "Captura guardada",
   "alascreen.toast.hint": "%1$s: revisar y compartir",
-  "alascreen.toast.hint_unbound": "Asigna una tecla de Ala Screen para compartir"
+  "alascreen.toast.hint_unbound": "Asigna una tecla de Ala Screen para compartir",
+  "alascreen.annotate.open": "Marcar",
+  "alascreen.annotate.close": "Ocultar herramientas",
+  "alascreen.annotate.arrow": "Flecha",
+  "alascreen.annotate.frame": "Marco",
+  "alascreen.annotate.pen": "Lápiz",
+  "alascreen.annotate.redact": "Tapar: un bloque sólido oculta coordenadas, nombres o chat",
+  "alascreen.annotate.undo": "Deshacer (Ctrl+Z)",
+  "alascreen.annotate.clear": "Quitar todas las marcas",
+  "alascreen.error.annotate_failed": "No se pudieron aplicar las marcas. No se envió ni se guardó nada."
 }

@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "Beim nächsten Mal wird sofort hochgeladen. Die Rückfrage lässt sich in der Konfiguration wieder einschalten.",
   "alascreen.error.invalid_image": "Die Seite konnte das nicht als Bild lesen.",
   "alascreen.error.unsupported_format": "Dieses Bildformat wird nicht angenommen.",
-  "alascreen.error.image_too_large_px": "Der Screenshot hat zu viele Pixel (%1$s x %2$s). Setze maxUploadSide in der Konfiguration, um ihn vor dem Hochladen zu verkleinern.",
+  "alascreen.error.image_too_large_px": "Der Screenshot hat zu viele Pixel (%1$s x %2$s).",
   "alascreen.error.too_large": "Der Screenshot ist zu groß (%1$s). Das Limit liegt bei %2$s.",
   "alascreen.error.invalid_request": "Die Seite hat die Anfrage abgelehnt.",
   "alascreen.error.invalid_token": "Die Seite hat deinen API-Token abgelehnt. Prüfe ihn in der Konfiguration.",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "So lassen, wie es ist",
   "alascreen.toast.saved": "Screenshot gespeichert",
   "alascreen.toast.hint": "%1$s: prüfen und teilen",
-  "alascreen.toast.hint_unbound": "Belege eine Taste für Ala Screen zum Teilen"
+  "alascreen.toast.hint_unbound": "Belege eine Taste für Ala Screen zum Teilen",
+  "alascreen.annotate.open": "Markieren",
+  "alascreen.annotate.close": "Werkzeuge ausblenden",
+  "alascreen.annotate.arrow": "Pfeil",
+  "alascreen.annotate.frame": "Rahmen",
+  "alascreen.annotate.pen": "Stift",
+  "alascreen.annotate.redact": "Abdecken: ein fester Block verbirgt Koordinaten, Namen oder Chat",
+  "alascreen.annotate.undo": "Rückgängig (Strg+Z)",
+  "alascreen.annotate.clear": "Alle Markierungen entfernen",
+  "alascreen.error.annotate_failed": "Die Markierungen konnten nicht angewendet werden. Nichts wurde gesendet oder gespeichert."
 }

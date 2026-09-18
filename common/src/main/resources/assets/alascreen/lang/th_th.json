@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "ครั้งต่อไปจะอัปโหลดทันที เปิดคำถามนี้กลับมาได้ในไฟล์ตั้งค่า",
   "alascreen.error.invalid_image": "เว็บไซต์อ่านไฟล์นี้เป็นรูปภาพไม่ได้",
   "alascreen.error.unsupported_format": "ไม่รองรับรูปแบบภาพนี้",
-  "alascreen.error.image_too_large_px": "ภาพนี้มีพิกเซลมากเกินไป (%1$s x %2$s) ตั้งค่า maxUploadSide ในไฟล์ตั้งค่าเพื่อย่อภาพก่อนอัปโหลด",
+  "alascreen.error.image_too_large_px": "ภาพนี้มีพิกเซลมากเกินไป (%1$s x %2$s)",
   "alascreen.error.too_large": "ภาพนี้ใหญ่เกินไป (%1$s) ขีดจำกัดคือ %2$s",
   "alascreen.error.invalid_request": "เว็บไซต์ปฏิเสธคำขอนี้",
   "alascreen.error.invalid_token": "เว็บไซต์ปฏิเสธโทเค็น API ของคุณ ตรวจสอบได้ในไฟล์ตั้งค่า",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "ปล่อยไว้ที่เดิม",
   "alascreen.toast.saved": "บันทึกภาพหน้าจอแล้ว",
   "alascreen.toast.hint": "%1$s: ตรวจสอบแล้วแชร์",
-  "alascreen.toast.hint_unbound": "กำหนดปุ่ม Ala Screen เพื่อแชร์"
+  "alascreen.toast.hint_unbound": "กำหนดปุ่ม Ala Screen เพื่อแชร์",
+  "alascreen.annotate.open": "ขีดเขียน",
+  "alascreen.annotate.close": "ซ่อนเครื่องมือ",
+  "alascreen.annotate.arrow": "ลูกศร",
+  "alascreen.annotate.frame": "กรอบ",
+  "alascreen.annotate.pen": "ปากกา",
+  "alascreen.annotate.redact": "ปิดทับ: บล็อกทึบซ่อนพิกัด ชื่อ หรือแชท",
+  "alascreen.annotate.undo": "เลิกทำ (Ctrl+Z)",
+  "alascreen.annotate.clear": "ลบเครื่องหมายทั้งหมด",
+  "alascreen.error.annotate_failed": "ใส่เครื่องหมายไม่สำเร็จ จึงไม่ได้ส่งหรือบันทึกสิ่งใด"
 }

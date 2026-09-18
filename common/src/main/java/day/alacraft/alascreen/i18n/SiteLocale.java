@@ -11,7 +11,7 @@ import java.util.Locale;
  * resolved before it is sent. Ala Screen is a client mod: whoever reads the
  * message has the mod, so every player-facing string is an ordinary
  * {@code Component.translatable} resolved by the game against
- * {@code assets/alascreen/lang/}. That gives us thirteen languages for free, plus
+ * {@code assets/alascreen/lang/}. That gives us fourteen languages for free, plus
  * the player's own resource-pack overrides, and leaves only one thing the game
  * cannot answer — which locale to put in the link.
  *

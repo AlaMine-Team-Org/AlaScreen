@@ -1,17 +1,24 @@
 package day.alacraft.alascreen.mc;
 
 import day.alacraft.alascreen.AlaScreen;
+import day.alacraft.alascreen.annotate.Stroke;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.FormattedCharSequence;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -43,15 +50,21 @@ public final class ConfirmUploadScreen extends Screen {
     /** So a short label such as "Upload" does not become a square. */
     private static final int MIN_BUTTON_WIDTH = 80;
 
-    private static final int TEXT = 0xFFFFFF;
-    private static final int MUTED = 0xA0A0A0;
-    private static final int WARNING = 0xFFD24A;
+    // ARGB, all eight digits. Written as 0xFFFFFF these were white at zero
+    // opacity, and 26.2 skips text whose alpha is zero: the title, the warning
+    // and the details line shipped invisible in 0.1.0 to 0.1.2, on the one
+    // screen that exists to be read. ArgbColorLintTest now fails the build on it.
+    private static final int TEXT = 0xFFFFFFFF;
+    private static final int MUTED = 0xFFA0A0A0;
+    private static final int WARNING = 0xFFFFD24A;
 
     private final CapturedShot shot;
-    private final Consumer<CapturedShot> onUpload;
-    private final Consumer<CapturedShot> onSaveOnly;
+    private final BiConsumer<CapturedShot, List<Stroke>> onUpload;
+    private final BiConsumer<CapturedShot, List<Stroke>> onSaveOnly;
     private final Runnable onCancel;
     private final Consumer<Boolean> onRememberChanged;
+
+    private final AnnotationEditor editor = new AnnotationEditor(Minecraft.getInstance());
 
     private final Identifier textureId;
     private DynamicTexture texture;
@@ -67,8 +80,8 @@ public final class ConfirmUploadScreen extends Screen {
     private boolean decided;
 
     public ConfirmUploadScreen(CapturedShot shot,
-                               Consumer<CapturedShot> onUpload,
-                               Consumer<CapturedShot> onSaveOnly,
+                               BiConsumer<CapturedShot, List<Stroke>> onUpload,
+                               BiConsumer<CapturedShot, List<Stroke>> onSaveOnly,
                                Runnable onCancel,
                                Consumer<Boolean> onRememberChanged) {
         super(Component.translatable("alascreen.confirm.title"));
@@ -94,6 +107,8 @@ public final class ConfirmUploadScreen extends Screen {
         }
 
         layOutButtons();
+
+        editor.init(width, HEADER, font, this::addRenderableWidget);
 
         remember = addRenderableWidget(Checkbox.builder(
                         Component.translatable("alascreen.confirm.remember"), font)
@@ -198,7 +213,9 @@ public final class ConfirmUploadScreen extends Screen {
      */
     private void saveOnly() {
         decided = true;
-        onSaveOnly.accept(shot);
+        // Before the screen closes: the marks are burnt into a copy of the
+        // frame, and the frame is freed with the preview texture in removed().
+        onSaveOnly.accept(shot, editor.strokes());
         minecraft.gui.setScreen(null);
     }
 
@@ -209,7 +226,7 @@ public final class ConfirmUploadScreen extends Screen {
             onRememberChanged.accept(Boolean.TRUE);
         }
 
-        onUpload.accept(shot);
+        onUpload.accept(shot, editor.strokes());
 
         // Closed directly rather than through onClose(): this screen's onClose is
         // the cancel path and would report a cancellation we just overrode.
@@ -237,11 +254,55 @@ public final class ConfirmUploadScreen extends Screen {
             texture = null;
         }
 
+        editor.release();
+
         super.removed();
     }
 
     @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (super.mouseClicked(event, doubleClick)) {
+            return true;
+        }
+
+        int[] preview = previewRect();
+        return preview != null && editor.mouseClicked(event.x(), event.y(), event.button(), preview);
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        int[] preview = previewRect();
+
+        if (preview != null && editor.mouseDragged(event.x(), event.y(), preview)) {
+            return true;
+        }
+
+        return super.mouseDragged(event, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (editor.mouseReleased()) {
+            return true;
+        }
+
+        return super.mouseReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (event.hasControlDown() && event.key() == GLFW.GLFW_KEY_Z && editor.undoKey()) {
+            return true;
+        }
+
+        return super.keyPressed(event);
+    }
+
+    @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        // Before the widgets, so the panel sits under its own buttons.
+        editor.extractPanel(graphics);
+
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
         Font f = this.font;
@@ -250,9 +311,12 @@ public final class ConfirmUploadScreen extends Screen {
 
         // Wrapped rather than one long line: the sentence is the whole reason
         // this screen exists, and it must stay readable on a narrow window.
-        graphics.textWithWordWrap(f,
-                Component.translatable("alascreen.confirm.warning"),
-                MARGIN, 34, width - MARGIN * 2, WARNING);
+        // Centred line by line, under the centred title.
+        int line = 34;
+        for (FormattedCharSequence part : f.split(Component.translatable("alascreen.confirm.warning"), width - MARGIN * 2)) {
+            graphics.centeredText(f, part, width / 2, line, WARNING);
+            line += f.lineHeight;
+        }
 
         drawPreview(graphics);
 
@@ -260,21 +324,26 @@ public final class ConfirmUploadScreen extends Screen {
                 Component.translatable("alascreen.confirm.details",
                         shot.width(), shot.height(), ChatFormat.size(shot.bytes())),
                 width / 2, buttonRowTop - 42, MUTED);
+
+        editor.extractDecorations(graphics);
     }
 
     /**
-     * Draw the capture, scaled to fit and never stretched.
+     * Where the capture is drawn: x, y, width, height, or null when there is no room.
      *
-     * <p>Aspect ratio is preserved deliberately: this is the image the player is
-     * being asked to judge, and a squashed preview would misrepresent what is
-     * actually in the frame.
+     * <p>Scaled to fit and never stretched. Aspect ratio is preserved
+     * deliberately: this is the image the player is being asked to judge, and a
+     * squashed preview would misrepresent what is actually in the frame. One
+     * method for drawing and for the mouse, so a mark lands where it was drawn.
      */
-    private void drawPreview(GuiGraphicsExtractor graphics) {
-        int boxWidth = width - MARGIN * 2;
+    private int[] previewRect() {
+        int left = Math.max(MARGIN, AnnotationEditor.SIDE_RESERVE);
+        int right = width - left;
+        int boxWidth = right - left;
         int boxHeight = Math.max(0, buttonRowTop - 48 - HEADER);
 
         if (boxWidth <= 0 || boxHeight <= 0 || shot.width() <= 0 || shot.height() <= 0) {
-            return;
+            return null;
         }
 
         double scale = Math.min(boxWidth / (double) shot.width(), boxHeight / (double) shot.height());
@@ -285,8 +354,20 @@ public final class ConfirmUploadScreen extends Screen {
         int drawWidth = Math.max(1, (int) Math.round(shot.width() * scale));
         int drawHeight = Math.max(1, (int) Math.round(shot.height() * scale));
 
-        int x0 = (width - drawWidth) / 2;
-        int y0 = HEADER + (boxHeight - drawHeight) / 2;
+        return new int[]{left + (boxWidth - drawWidth) / 2, HEADER + (boxHeight - drawHeight) / 2, drawWidth, drawHeight};
+    }
+
+    private void drawPreview(GuiGraphicsExtractor graphics) {
+        int[] preview = previewRect();
+
+        if (preview == null) {
+            return;
+        }
+
+        int x0 = preview[0];
+        int y0 = preview[1];
+        int drawWidth = preview[2];
+        int drawHeight = preview[3];
 
         // A one-pixel frame so a dark screenshot does not blend into the
         // background and read as "nothing was captured".
@@ -295,6 +376,8 @@ public final class ConfirmUploadScreen extends Screen {
         // 26.2 takes CORNERS here, not a size: the last two ints are x1/y1.
         // Passing width and height compiles and silently draws the wrong thing.
         graphics.blit(textureId, x0, y0, x0 + drawWidth, y0 + drawHeight, 0.0F, 1.0F, 0.0F, 1.0F);
+
+        editor.extractOverlay(graphics, x0, y0, drawWidth, drawHeight);
     }
 
     @Override

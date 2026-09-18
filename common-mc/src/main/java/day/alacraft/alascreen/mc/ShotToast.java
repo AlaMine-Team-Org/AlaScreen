@@ -89,7 +89,7 @@ public final class ShotToast implements Toast {
     /**
      * Caps, because the plaque is a corner notification and not a window.
      *
-     * <p>Thirteen languages means a line that is four words in English can be
+     * <p>Fourteen languages means a line that is four words in English can be
      * seven somewhere else. Wrapping handles that; these stop the wrapping from
      * growing the plaque without limit when a translation is unusually long or a
      * resource pack ships a wide font. What does not fit is dropped rather than
@@ -174,7 +174,7 @@ public final class ShotToast implements Toast {
      * <p>Done here rather than while drawing because {@link #height()} is asked
      * before the first frame — the manager needs it to reserve slots. A fixed
      * height would mean either empty space under short text or clipped text under
-     * long, and with thirteen languages both happen on the same plaque.
+     * long, and with fourteen languages both happen on the same plaque.
      */
     private void layOut(Font font, int shotWidth, int shotHeight, Component title, Component hint) {
         int titleWidth = WIDTH - LEFT - RIGHT;

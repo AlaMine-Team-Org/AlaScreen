@@ -31,7 +31,7 @@
   "alascreen.confirm.remember.tooltip": "L'envoi sera immédiat la prochaine fois. La question se réactive dans la configuration.",
   "alascreen.error.invalid_image": "Le site n'a pas pu lire ce fichier comme une image.",
   "alascreen.error.unsupported_format": "Ce format d'image n'est pas accepté.",
-  "alascreen.error.image_too_large_px": "Cette capture a trop de pixels (%1$s x %2$s). Définissez maxUploadSide dans la configuration pour la réduire avant l'envoi.",
+  "alascreen.error.image_too_large_px": "Cette capture a trop de pixels (%1$s x %2$s).",
   "alascreen.error.too_large": "Cette capture est trop lourde (%1$s). La limite est de %2$s.",
   "alascreen.error.invalid_request": "Le site a rejeté la requête.",
   "alascreen.error.invalid_token": "Le site a rejeté votre jeton d'API. Vérifiez-le dans la configuration.",
@@ -70,5 +70,14 @@
   "alascreen.button.cancel.hover": "Ne rien faire",
   "alascreen.toast.saved": "Capture enregistrée",
   "alascreen.toast.hint": "%1$s : vérifier et partager",
-  "alascreen.toast.hint_unbound": "Attribuez une touche à Ala Screen pour partager"
+  "alascreen.toast.hint_unbound": "Attribuez une touche à Ala Screen pour partager",
+  "alascreen.annotate.open": "Annoter",
+  "alascreen.annotate.close": "Masquer les outils",
+  "alascreen.annotate.arrow": "Flèche",
+  "alascreen.annotate.frame": "Cadre",
+  "alascreen.annotate.pen": "Crayon",
+  "alascreen.annotate.redact": "Masquer : un bloc plein cache coordonnées, pseudos ou chat",
+  "alascreen.annotate.undo": "Annuler (Ctrl+Z)",
+  "alascreen.annotate.clear": "Retirer toutes les annotations",
+  "alascreen.error.annotate_failed": "Impossible d'appliquer les annotations. Rien n'a été envoyé ni enregistré."
 }

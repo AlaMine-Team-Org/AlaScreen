@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import day.alacraft.alascreen.api.AlaScreenApi;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,7 +29,13 @@ public final class Config {
     /** Bumped only when a key changes meaning, not when one is added. */
     public static final int SCHEMA_VERSION = 1;
 
-    /** Where screenshots are uploaded. Point it at a self-hosted instance if you run one. */
+    /**
+     * Where screenshots are uploaded, exactly as the player wrote it. Point it at
+     * a self-hosted instance if you run one.
+     *
+     * <p>Never replaced by the default, not even when it cannot be used - the
+     * address actually used is {@link #effectiveApiBaseUrl()}.
+     */
     public String apiBaseUrl = AlaScreen.DEFAULT_API_BASE_URL;
 
     /**
@@ -86,17 +93,6 @@ public final class Config {
      */
     public boolean toastAfterCapture = true;
 
-    /**
-     * Downscale anything wider or taller than this before uploading. 0 keeps the
-     * original size.
-     *
-     * <p>Aimed at the huge-resolution mods: an 8K panorama is tens of megabytes
-     * and will be refused by the size cap anyway, so shrinking beats a failed
-     * upload. The default is 0 because a normal screenshot must never be
-     * silently degraded.
-     */
-    public int maxUploadSide = 0;
-
     public static Config load(Path file) {
         Config config = new Config();
 
@@ -112,7 +108,6 @@ public final class Config {
                 config.saveLocalCopy = bool(json, "saveLocalCopy", config.saveLocalCopy);
                 config.persistHistory = bool(json, "persistHistory", config.persistHistory);
                 config.toastAfterCapture = bool(json, "toastAfterCapture", config.toastAfterCapture);
-                config.maxUploadSide = integer(json, "maxUploadSide", config.maxUploadSide);
             }
 
             config.normalise();
@@ -123,6 +118,16 @@ public final class Config {
             AlaScreen.LOGGER.warn("Could not read {} ({}). Using defaults; the file was left as it is.",
                     file, e.getMessage());
             config.normalise();
+        }
+
+        if (AlaScreenApi.usableBaseUrl(config.apiBaseUrl).isEmpty()) {
+            // Every start, not once: the file keeps the broken value, so the
+            // complaint has to keep pace with it. An error that stops after the
+            // first restart is an error nobody acts on.
+            AlaScreen.LOGGER.error("apiBaseUrl in the config is not a usable URL (\"{}\"), so {} is used "
+                            + "instead. It has to start with https:// (or http://). The file keeps your value, "
+                            + "so it can be corrected.",
+                    config.apiBaseUrl, AlaScreen.DEFAULT_API_BASE_URL);
         }
 
         return config;
@@ -138,14 +143,13 @@ public final class Config {
         json.addProperty("saveLocalCopy", saveLocalCopy);
         json.addProperty("persistHistory", persistHistory);
         json.addProperty("toastAfterCapture", toastAfterCapture);
-        json.addProperty("maxUploadSide", maxUploadSide);
 
-        Path parent = file.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-        Files.writeString(file, GSON.toJson(json) + System.lineSeparator(), StandardCharsets.UTF_8);
-        PrivateFiles.restrictToOwner(file);
+        // Composed beside the file and moved over it, owner-only from the moment
+        // it exists. This file holds an API token: writing it in place left a
+        // truncated config after a crash mid-write, and tightening the
+        // permissions afterwards left the token readable by every account on the
+        // machine for as long as the write took.
+        AtomicFiles.writePrivate(file, GSON.toJson(json) + System.lineSeparator());
     }
 
     /** True when uploads should be attached to an account. */
@@ -154,9 +158,31 @@ public final class Config {
     }
 
     /**
+     * The address uploads actually go to: {@link #apiBaseUrl}, or the default
+     * standing in for it when it cannot be used.
+     *
+     * <p>Computed, never stored. The first version put the default INTO
+     * {@code apiBaseUrl} when the player's address could not be used, and the
+     * config is saved mid-game when "do not ask again" is ticked - so a
+     * self-hoster's address, typo and all, was overwritten with ours. The file
+     * then read as valid, the error at startup never came back, and their
+     * screenshots went to alacraft.day in silence. A fallback may be used; it
+     * must never be written.
+     *
+     * <p>Decided by {@link AlaScreenApi#usableBaseUrl}, the rule the client's
+     * builder applies too, so this never hands the builder an address it would
+     * throw on.
+     */
+    public String effectiveApiBaseUrl() {
+        return AlaScreenApi.usableBaseUrl(apiBaseUrl).orElse(AlaScreen.DEFAULT_API_BASE_URL);
+    }
+
+    /**
      * Repair values that would otherwise fail far from their cause — an empty
-     * base URL surfacing as a confusing HTTP error, a negative side length as an
-     * exception inside the scaler.
+     * base URL surfacing as a confusing HTTP error.
+     *
+     * <p>Repair, not replace: an address that is present but unusable is left
+     * as written, so the player still has their own value to correct.
      */
     private void normalise() {
         if (apiBaseUrl == null || apiBaseUrl.isBlank()) {
@@ -168,24 +194,10 @@ public final class Config {
         }
 
         apiToken = apiToken == null ? "" : apiToken.trim();
-
-        // 0 means "leave it alone". Anything positive is clamped to a sane floor:
-        // a 16-pixel "screenshot" is a mistake, not a preference.
-        if (maxUploadSide != 0) {
-            maxUploadSide = Math.max(256, Math.min(15360, maxUploadSide));
-        }
     }
 
     private static String string(JsonObject json, String key, String fallback) {
         return json.has(key) && json.get(key).isJsonPrimitive() ? json.get(key).getAsString() : fallback;
-    }
-
-    private static int integer(JsonObject json, String key, int fallback) {
-        try {
-            return json.has(key) && json.get(key).isJsonPrimitive() ? json.get(key).getAsInt() : fallback;
-        } catch (NumberFormatException | UnsupportedOperationException e) {
-            return fallback;
-        }
     }
 
     /**

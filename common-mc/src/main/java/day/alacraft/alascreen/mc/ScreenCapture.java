@@ -2,6 +2,8 @@ package day.alacraft.alascreen.mc;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import day.alacraft.alascreen.AlaScreen;
+import day.alacraft.alascreen.annotate.Rasterizer;
+import day.alacraft.alascreen.annotate.Stroke;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 
@@ -10,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -221,6 +224,56 @@ public final class ScreenCapture {
         }
 
         return best;
+    }
+
+    /**
+     * A private copy of a frame, taken on the render thread.
+     *
+     * <p>The preview texture owns the original and frees it the moment the
+     * confirmation screen closes, which is the same moment the marks are needed.
+     */
+    public static NativeImage copyOf(NativeImage source) {
+        NativeImage copy = new NativeImage(source.format(), source.getWidth(), source.getHeight(), false);
+        copy.copyFrom(source);
+        return copy;
+    }
+
+    /**
+     * Burn the marks into {@code frame} and encode it. Off the render thread.
+     *
+     * <p>When the shot has a file on disk, the marked picture is written next to
+     * it as {@code <name>-marked.png} and the original is left alone: that is the
+     * player's screenshot. The upload then points at the marked file, so
+     * {@code [copy image]} puts on the clipboard what was actually shared.
+     *
+     * @param frame a copy from {@link #copyOf}; the returned shot owns it
+     */
+    public static CapturedShot mark(CapturedShot shot, NativeImage frame, List<Stroke> marks, Path workDirectory) {
+        try {
+            Rasterizer.paint(new ImageCanvas(frame), marks);
+
+            if (shot.savedTo().isPresent()) {
+                String name = markedName(shot.fileName());
+                Path target = shot.savedTo().get().resolveSibling(name);
+                frame.writeToFile(target);
+
+                return new CapturedShot(Files.readAllBytes(target), frame.getWidth(), frame.getHeight(),
+                        name, Optional.of(target), frame);
+            }
+
+            return new CapturedShot(encodeToBytes(frame, workDirectory), frame.getWidth(), frame.getHeight(),
+                    shot.fileName(), Optional.empty(), frame);
+        } catch (IOException | RuntimeException e) {
+            frame.close();
+            throw new IllegalStateException("Could not apply the marks: " + e.getMessage(), e);
+        }
+    }
+
+    static String markedName(String fileName) {
+        int dot = fileName.lastIndexOf('.');
+        return dot > 0
+                ? fileName.substring(0, dot) + "-marked" + fileName.substring(dot)
+                : fileName + "-marked.png";
     }
 
     /** True when a capture breaks either published limit. */

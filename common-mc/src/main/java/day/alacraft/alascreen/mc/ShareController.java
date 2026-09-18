@@ -3,6 +3,7 @@ package day.alacraft.alascreen.mc;
 import day.alacraft.alascreen.AlaScreen;
 import day.alacraft.alascreen.Config;
 import day.alacraft.alascreen.UploadService;
+import day.alacraft.alascreen.annotate.Stroke;
 import day.alacraft.alascreen.clipboard.CopyOutcome;
 import day.alacraft.alascreen.clipboard.ImageClipboard;
 import day.alacraft.alascreen.history.UploadRecord;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * The flow, from key press to chat line.
@@ -240,10 +242,54 @@ public final class ShareController {
 
         minecraft.setScreenAndShow(new ConfirmUploadScreen(
                 shot,
-                confirmed -> upload(minecraft, confirmed),
-                kept -> saveOnly(minecraft, kept),
+                (confirmed, marks) -> withMarks(minecraft, confirmed, marks, marked -> upload(minecraft, marked)),
+                (kept, marks) -> withMarks(minecraft, kept, marks, marked -> saveOnly(minecraft, marked)),
                 () -> busy.set(false),
                 this::rememberDoNotAsk));
+    }
+
+    /**
+     * Burn the player's marks into the shot, then carry on.
+     *
+     * <p>Called from the confirmation screen before it closes, which matters:
+     * the frame is copied here, on the render thread, while the preview texture
+     * still owns the original.
+     *
+     * <p>A failure stops the flow instead of falling back to the unmarked shot.
+     * The marks may be cover-ups, and sending the picture without them would
+     * publish exactly what the player just hid.
+     */
+    private void withMarks(Minecraft minecraft, CapturedShot shot, List<Stroke> marks, Consumer<CapturedShot> then) {
+        if (marks.isEmpty()) {
+            then.accept(shot);
+            return;
+        }
+
+        NativeImage frame = ScreenCapture.copyOf(shot.image());
+        Path workDirectory = screenshotsDirectory.resolveSibling(".alascreen-tmp");
+
+        CompletableFuture
+                .supplyAsync(() -> ScreenCapture.mark(shot, frame, marks, workDirectory), runnable ->
+                        new Thread(runnable, "AlaScreen mark").start())
+                .whenComplete((marked, failure) -> minecraft.execute(() -> {
+                    if (failure != null) {
+                        busy.set(false);
+                        AlaScreen.LOGGER.error("Could not apply the marks.", failure);
+                        tell(minecraft, ChatFormat.error("alascreen.error.annotate_failed"));
+                        return;
+                    }
+
+                    marked.savedTo().ifPresent(path ->
+                            tell(minecraft, ChatFormat.info("alascreen.chat.saved_local", path.getFileName().toString())));
+
+                    // Marks rarely grow a PNG, but a shot that sat just under the
+                    // limit may cross it; the site would refuse what we could fit.
+                    CapturedShot fitted = ScreenCapture.fitToLimit(
+                            marked, service.limits().maxBytes(), service.limits().maxPixels(), workDirectory);
+                    fitted.close();
+
+                    then.accept(fitted);
+                }));
     }
 
     /**
