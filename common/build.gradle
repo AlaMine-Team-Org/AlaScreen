@@ -37,6 +37,10 @@ test {
                 .withPropertyName(property)
                 .withPathSensitivity(PathSensitivity.RELATIVE)
     }
+    // Every Minecraft line's copies, not only the selected one: the lints read them all.
+    inputs.dir(rootProject.file('common-mc/src/mc'))
+            .withPropertyName('commonMcLineSources')
+            .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 // Hand the SOURCE directories to the loader modules rather than a jar — see

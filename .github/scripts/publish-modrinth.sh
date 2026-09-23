@@ -35,15 +35,15 @@ done
 # the NeoForge one, which is the whole reason these are two versions.
 if [ "$LOADER" = "fabric" ]; then
     DEPENDENCIES='[{"project_id": "P7dR8mSH", "dependency_type": "required"}]'
-    NAME="Ala Screen $VERSION [Fabric]"
+    NAME="Ala Screen $VERSION [Fabric $MC]"
 else
     DEPENDENCIES='[]'
-    NAME="Ala Screen $VERSION [NeoForge]"
+    NAME="Ala Screen $VERSION [NeoForge $MC]"
 fi
 
 DATA=$(jq -n \
     --arg name "$NAME" \
-    --arg version_number "$VERSION+$LOADER" \
+    --arg version_type "${VERSION_TYPE:-release}" --arg version_number "$VERSION+$LOADER-$MC" \
     --rawfile changelog NOTES.md \
     --arg project_id "$MODRINTH_PROJECT" \
     --arg game_version "$MC" \
@@ -55,7 +55,7 @@ DATA=$(jq -n \
       changelog: $changelog,
       dependencies: $dependencies,
       game_versions: [$game_version],
-      version_type: "release",
+      version_type: $version_type,
       loaders: [$loader],
       featured: false,
       status: "listed",

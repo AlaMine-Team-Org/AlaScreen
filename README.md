@@ -48,9 +48,11 @@ picture itself.
 
 ## Status
 
-Minecraft 26.2, **Fabric and NeoForge**, client-side only — it
+Minecraft **26.2 and 26.3**, **Fabric and NeoForge**, client-side only — it
 works in singleplayer, on a vanilla server, and on a server that has never heard
-of it.
+of it. There is one jar per game version and loader; pick the one whose name
+matches your game (`alascreen-fabric-26.3-…` for Fabric on 26.3). The NeoForge
+jar for 26.3 is a beta for as long as NeoForge itself is one on that version.
 
 Both loaders ship the same build. Everything a player interacts with lives in
 `common` and `common-mc` and is compiled from one source by each loader, so the
@@ -78,11 +80,19 @@ artifact.
 Requires JDK 25.
 
 ```bash
-./gradlew :fabric:build :neoforge:build   # jars in <loader>/build/libs/
-./gradlew :common:test                    # unit tests, no game needed
-./gradlew :fabric:runClient               # dev client (or :neoforge:runClient)
-python3 tools/loader_parity_check.py      # the entrypoints still agree
+./gradlew :fabric:build :neoforge:build            # Minecraft 26.2, jars in <loader>/build/libs/
+./gradlew :fabric:build :neoforge:build -Pmc=26.3  # the same for Minecraft 26.3
+./gradlew :common:test                             # unit tests, no game needed
+./gradlew :fabric:runClient -Pmc=26.3              # dev client (or :neoforge:runClient)
+python3 tools/loader_parity_check.py               # the entrypoints still agree
 ```
+
+One source tree builds every Minecraft version the mod supports. Each version
+is a file in `gradle/mc/` holding its Minecraft, Fabric and NeoForge versions,
+and `-Pmc=<version>` picks one (26.2 by default). A jar is built per version
+because the key and mouse codes are compiled in, and 26.3 numbers them
+differently. The little code that has to differ lives in
+`common-mc/src/mc/<version>/java`.
 
 More in [docs/DEV-RUN.md](docs/DEV-RUN.md); API signatures verified against the
 26.2 jar are in [docs/MC-26.2-API.md](docs/MC-26.2-API.md) — 26.2 rewrote the GUI
@@ -102,7 +112,7 @@ layer, so that file is not optional reading.
 | `persistHistory` | `true` | Remember upload ids and delete tokens across restarts |
 
 The key binding defaults to **F7** — next to the screenshot key it belongs with,
-and free in 26.2 (F6 is not: it opens the debug options). Rebind it under
+and free in 26.2 and 26.3 (F6 is not: it opens the debug options). Rebind it under
 Options → Controls → *Ala Screen*, or ignore it entirely: pressing F2 gives you
 the same offer in chat.
 

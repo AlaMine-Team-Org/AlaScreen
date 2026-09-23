@@ -20,6 +20,16 @@ for required in CURSEFORGE_TOKEN CURSEFORGE_PROJECT VERSION JAR GAME_VERSIONS LA
     fi
 done
 
+# "release" unless the caller says otherwise. The NeoForge file of a line whose
+# NeoForge exists only as a beta goes out as "beta" (SCREEN-016): a stable label
+# on a build against a platform that may still break its API would promise more
+# than the file can keep.
+RELEASE_TYPE="${RELEASE_TYPE:-release}"
+case "$RELEASE_TYPE" in
+    release|beta|alpha) ;;
+    *) echo "::error::RELEASE_TYPE must be release, beta or alpha, got: $RELEASE_TYPE"; exit 2 ;;
+esac
+
 [ -f "$JAR" ] || { echo "::error::no such jar: $JAR"; exit 1; }
 [ -s NOTES.md ] || { echo "::error::NOTES.md is missing or empty"; exit 1; }
 
@@ -29,13 +39,13 @@ done
 METADATA=$(jq -n \
     --rawfile changelog NOTES.md \
     --arg displayName "Ala Screen $VERSION [$LABEL]" \
-    --argjson gameVersions "$GAME_VERSIONS" \
+    --arg releaseType "$RELEASE_TYPE" --argjson gameVersions "$GAME_VERSIONS" \
     '{
       changelog: $changelog,
       changelogType: "markdown",
       displayName: $displayName,
       gameVersions: $gameVersions,
-      releaseType: "release"
+      releaseType: $releaseType
     }')
 
 for attempt in 1 2 3 4 5; do

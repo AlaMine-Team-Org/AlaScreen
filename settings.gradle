@@ -47,3 +47,30 @@ include('common')
 include('common-mc')
 include('fabric')
 include('neoforge')
+
+// Which Minecraft line this build is for. `mc` comes from gradle.properties or
+// from -Pmc=... on the command line, and names a file in gradle/mc/ that holds
+// the Minecraft, NeoForm, Fabric and NeoForge versions of that line. Every
+// project gets them as extra properties before its build script runs, so the
+// scripts read `minecraft_version` exactly as they did when it sat in
+// gradle.properties.
+//
+// One jar cannot serve two lines even when the source is identical: the input
+// constants are inlined at compile time and 26.3 renumbered them (SCREEN-016).
+// So each line is its own build, and a release builds each of them.
+def mcLine = providers.gradleProperty('mc').getOrNull()
+if (!(mcLine ==~ /\d+\.\d+(\.\d+)?/)) {
+    throw new GradleException("Set the Minecraft line with -Pmc=<version> (one of gradle/mc/*.properties), got: ${mcLine}")
+}
+def mcFile = file("gradle/mc/${mcLine}.properties")
+if (!mcFile.isFile()) {
+    throw new GradleException("No such Minecraft line: ${mcLine} - expected ${mcFile}")
+}
+def mcVersions = new Properties()
+mcFile.withInputStream { mcVersions.load(it) }
+if (mcVersions.getProperty('minecraft_version') != mcLine) {
+    throw new GradleException("${mcFile.name} declares minecraft_version=${mcVersions.getProperty('minecraft_version')}, not ${mcLine}")
+}
+gradle.beforeProject { project ->
+    mcVersions.each { key, value -> project.ext.set(key as String, value as String) }
+}

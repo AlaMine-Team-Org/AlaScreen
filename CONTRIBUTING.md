@@ -9,13 +9,16 @@ welcome.
 Requires **JDK 25** — Minecraft 26.x will not start on anything older.
 
 ```bash
-./gradlew :fabric:build     # build the jar
-./gradlew :common:test      # unit tests, no game needed
-./gradlew :fabric:runClient # dev client
+./gradlew :fabric:build :neoforge:build            # both loaders, Minecraft 26.2
+./gradlew :fabric:build :neoforge:build -Pmc=26.3  # both loaders, Minecraft 26.3
+./gradlew :common:test                             # unit tests, no game needed
+./gradlew :fabric:runClient                        # dev client (-Pmc=26.3 for the other version)
 ```
 
 The dev environment is self-contained: worlds, configs and screenshots live under
-`fabric/runs/client/` and never touch a real Minecraft installation.
+`<loader>/runs/<minecraft version>/client/` and never touch a real Minecraft
+installation. Each game version gets its own directory, because a world opened
+on 26.3 cannot be opened on 26.2 again.
 
 ## How the code is laid out
 
@@ -24,6 +27,7 @@ The dev environment is self-contained: worlds, configs and screenshots live unde
 | `common` | HTTP, multipart, config, history, locale mapping | no |
 | `common-mc` | capture, the confirmation screen, chat, the whole flow | yes, via NeoForm |
 | `fabric` | entrypoint, key binding, client command, one mixin | yes |
+| `neoforge` | the same, for the other loader | yes |
 
 `common` and `common-mc` are consumed as **source**, so each loader recompiles
 them with its own toolchain. Write a feature once, in the shared module; a
@@ -41,6 +45,10 @@ loader module is an entrypoint and a handful of lines.
   layer — `GuiGraphics` is gone, `blit` takes corners rather than a size, and
   key categories are Identifier-backed records. Verify against the jar with
   `javap` before writing against it.
+- **Both Minecraft versions, both loaders.** Build all four before sending a
+  change. Key and mouse codes are named through `InputConstants`, never written
+  as numbers: 26.3 renumbered them, and a number keeps compiling while it quietly
+  listens to the wrong key. A test fails the build on a numbered code.
 - **Nothing uploaded without a person asking for it.** The mod shows the frame
   and waits. That is not a preference, it is the reason the mod is safe to use:
   no rule can scan pixels for coordinates, chat or a server address.

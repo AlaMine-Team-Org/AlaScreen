@@ -53,6 +53,9 @@ class LangCatalogTest {
     private static final List<Path> SOURCES = List.of(
             Path.of("src/main/java"),
             Path.of("../common-mc/src/main/java"),
+            // The per-Minecraft-line copies (src/mc/<line>/java) - every line, not
+            // just the one being built, so a twin cannot hide from the check.
+            Path.of("../common-mc/src/mc"),
             Path.of("../fabric/src/main/java"),
             Path.of("../neoforge/src/main/java"));
 

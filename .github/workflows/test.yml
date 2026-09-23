@@ -39,14 +39,23 @@ jobs:
       # by each of them, so a change that compiles under one can fail under the
       # other - and finding that out at release time means the release is already
       # half-published.
-      - name: Build both loaders
-        run: ./gradlew :fabric:build :neoforge:build --no-daemon --stacktrace
+      # Every Minecraft line in gradle/mc/, both loaders each: code that builds
+      # for one line can fail for the other, and the release builds them all.
+      - name: Build every line and loader
+        run: |
+          for mc in $(ls gradle/mc/*.properties | sed -E 's#.*/##; s/\.properties$//' | sort -V); do
+            echo "::group::Minecraft $mc"
+            ./gradlew :fabric:build :neoforge:build -Pmc="$mc" --no-daemon --stacktrace
+            echo "::endgroup::"
+          done
 
-      - name: Verify both artifacts
+      - name: Verify every artifact
         run: |
           VERSION=$(grep '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
-          bash .github/scripts/verify-artifact.sh "$VERSION" . fabric
-          bash .github/scripts/verify-artifact.sh "$VERSION" . neoforge
+          for mc in $(ls gradle/mc/*.properties | sed -E 's#.*/##; s/\.properties$//' | sort -V); do
+            bash .github/scripts/verify-artifact.sh "$VERSION" . fabric "$mc"
+            bash .github/scripts/verify-artifact.sh "$VERSION" . neoforge "$mc"
+          done
 
       # The entrypoints are the only code written twice. Nothing else notices
       # when one of them stops calling a shared step: both jars still build,

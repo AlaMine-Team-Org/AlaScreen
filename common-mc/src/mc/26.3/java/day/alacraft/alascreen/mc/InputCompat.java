@@ -5,6 +5,8 @@ import net.minecraft.client.input.KeyEvent;
 
 /**
  * Keyboard questions whose answer is spelled differently per Minecraft version.
+ * THIS COPY IS FOR 26.3; its twin for 26.2 lives in src/mc/26.2/java with the
+ * same class name and the same public methods - change both together.
  *
  * <p>Undo follows the LETTER Z in the player's layout, the way vanilla reads its
  * own Ctrl+C and Ctrl+V. On 26.2 {@link KeyEvent#key()} is already that letter
@@ -28,8 +30,13 @@ public final class InputCompat {
     private InputCompat() {
     }
 
-    /** Ctrl+Z, by the letter the player sees on the key. */
+    /**
+     * Ctrl+Z, by the letter the player sees on the key. On 26.3 that letter is
+     * {@code shortcutKey()}, compared with {@code KEYCODE_Z} - the same pair
+     * vanilla uses for its own Ctrl+C and Ctrl+V ({@code isCopy} tests
+     * {@code shortcutKey() == 99}); {@code key()} here is the physical position.
+     */
     public static boolean isUndo(KeyEvent event) {
-        return event.hasControlDown() && event.key() == InputConstants.KEY_Z;
+        return event.hasControlDown() && event.shortcutKey() == InputConstants.KEYCODE_Z;
     }
 }

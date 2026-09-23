@@ -6,8 +6,9 @@
 # broken artifact is found while it is still cheap to fix - before the tag, not
 # after three platforms have a copy of it.
 #
-# Usage: verify-artifact.sh <version> [tree] [loader]
-#        tree defaults to the current directory; loader to "fabric".
+# Usage: verify-artifact.sh <version> [tree] [loader] [minecraft-line]
+#        tree defaults to the current directory; loader to "fabric"; the line to
+#        `mc` in gradle.properties. Every line is a file in gradle/mc/.
 #        The jar is expected at <tree>/<loader>/build/libs/alascreen-<loader>-<mc>-<version>.jar
 # Exit:  0 good, 1 something is wrong, 2 unusable input.
 
@@ -16,9 +17,10 @@ set -uo pipefail
 VERSION="${1:-}"
 TREE="${2:-.}"
 LOADER="${3:-fabric}"
+MC="${4:-}"
 
 if [ -z "$VERSION" ]; then
-    echo "usage: $(basename "$0") <version> [tree] [loader]" >&2
+    echo "usage: $(basename "$0") <version> [tree] [loader] [minecraft-line]" >&2
     exit 2
 fi
 
@@ -31,8 +33,14 @@ cd "$TREE" || { echo "verify: cannot enter $TREE" >&2; exit 2; }
 
 command -v unzip >/dev/null 2>&1 || { echo "verify: unzip is not on PATH" >&2; exit 2; }
 
-MC="$(grep -E '^minecraft_version=' gradle.properties | head -1 | cut -d= -f2- | tr -d '\r[:space:]')"
-[ -n "$MC" ] || { echo "verify: no minecraft_version in gradle.properties" >&2; exit 2; }
+prop() { grep -E "^$1=" "$2" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r'; }
+
+[ -n "$MC" ] || MC="$(prop mc gradle.properties | tr -d '[:space:]')"
+[ -n "$MC" ] || { echo "verify: no Minecraft line given and no mc= in gradle.properties" >&2; exit 2; }
+LINE_FILE="gradle/mc/$MC.properties"
+[ -f "$LINE_FILE" ] || { echo "verify: no such Minecraft line: $LINE_FILE" >&2; exit 2; }
+MC_RANGE="$(prop minecraft_version_range "$LINE_FILE")"
+[ -n "$MC_RANGE" ] || { echo "verify: $LINE_FILE has no minecraft_version_range" >&2; exit 2; }
 
 JAR="$LOADER/build/libs/alascreen-$LOADER-$MC-$VERSION.jar"
 
@@ -95,6 +103,30 @@ else
         bad "the metadata looks double-encoded - check gradle.properties for non-ASCII"
     else
         ok "the metadata is not double-encoded"
+    fi
+
+    # The jar must claim its own Minecraft line and no other. One source builds
+    # every line, and the input codes are inlined at compile time, so a jar
+    # built for 26.2 but labelled 26.3 would load there and quietly listen to
+    # the wrong keys.
+    if [ "$LOADER" = "fabric" ]; then
+        CLAIM="\"minecraft\": \"~$MC\""
+        if printf '%s' "$META" | grep -qF "$CLAIM"; then
+            ok "fabric.mod.json requires Minecraft ~$MC"
+        else
+            bad "fabric.mod.json does not require Minecraft ~$MC"
+            printf '%s\n' "$META" | grep -n '"minecraft"' | sed 's/^/       /'
+        fi
+    else
+        # The versionRange that follows modId = "minecraft".
+        CLAIM="$(printf '%s\n' "$META" | tr -d '\r' \
+            | awk '/modId *= *"minecraft"/ {f=1} f && /versionRange/ {print; exit}' \
+            | sed -E 's/.*versionRange *= *"([^"]*)".*/\1/')"
+        if [ "$CLAIM" = "$MC_RANGE" ]; then
+            ok "neoforge.mods.toml requires Minecraft $MC_RANGE"
+        else
+            bad "neoforge.mods.toml requires Minecraft '$CLAIM', expected '$MC_RANGE'"
+        fi
     fi
 fi
 

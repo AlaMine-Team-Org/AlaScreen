@@ -14,11 +14,12 @@ neoForge {
         }
         client {
             client()
-            gameDirectory = this.mkdir(this.file('runs/client'))
+            // One game directory per Minecraft line - see fabric/build.gradle.
+            gameDirectory = this.mkdir(this.file("runs/${minecraft_version}/client"))
         }
         server {
             server()
-            gameDirectory = this.mkdir(this.file('runs/server'))
+            gameDirectory = this.mkdir(this.file("runs/${minecraft_version}/server"))
         }
     }
 

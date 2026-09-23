@@ -29,6 +29,11 @@ configurations {
     }
 }
 
+// The few classes whose code differs between Minecraft lines live in
+// src/mc/<line>/java, one copy per line with the same class name. Only the
+// selected line's copy is compiled - see InputCompat for the first of them.
+sourceSets.main.java.srcDir("src/mc/${minecraft_version}/java")
+
 artifacts {
-    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    sourceSets.main.java.srcDirs.each { dir -> commonJava dir }
 }

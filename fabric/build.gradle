@@ -9,19 +9,21 @@ dependencies {
     implementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
 }
 
+// A game directory per Minecraft line: a world opened on 26.3 is upgraded and no
+// longer opens on 26.2, and options.txt keeps key codes that differ between them.
 loom {
     runs {
         client {
             client()
             setConfigName('Fabric Client')
             ideConfigGenerated(true)
-            runDir('runs/client')
+            runDir("runs/${minecraft_version}/client")
         }
         server {
             server()
             setConfigName('Fabric Server')
             ideConfigGenerated(true)
-            runDir('runs/server')
+            runDir("runs/${minecraft_version}/server")
         }
     }
 }

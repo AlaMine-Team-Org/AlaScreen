@@ -148,7 +148,7 @@ class ConfigTest {
         List<String> offenders = new ArrayList<>();
 
         for (Path root : List.of(Path.of("src/main/java"), Path.of("../common-mc/src/main/java"),
-                Path.of("../fabric/src/main/java"), Path.of("../neoforge/src/main/java"))) {
+                Path.of("../common-mc/src/mc"), Path.of("../fabric/src/main/java"), Path.of("../neoforge/src/main/java"))) {
             try (Stream<Path> files = Files.walk(root)) {
                 for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
                     String name = file.getFileName().toString();
