@@ -185,13 +185,13 @@ class ArgbColorLintTest {
                 "an overload the table does not know is reported, not ignored:\n" + all);
     }
 
-    private record SourceFile(String displayName, String className, String text) {
+    record SourceFile(String displayName, String className, String text) {
     }
 
     private record Report(int checked, List<String> findings) {
     }
 
-    private static List<SourceFile> modSources() throws IOException {
+    static List<SourceFile> modSources() throws IOException {
         List<SourceFile> files = new ArrayList<>();
 
         for (Path root : SOURCES) {
@@ -376,7 +376,7 @@ class ArgbColorLintTest {
         return -1;
     }
 
-    private static int lineOf(String text, int offset) {
+    static int lineOf(String text, int offset) {
         int line = 1;
 
         for (int i = 0; i < offset; i++) {
@@ -397,7 +397,7 @@ class ArgbColorLintTest {
      * bracket inside {@code "a(b"} is not a bracket - both learnt the hard way by
      * the loader parity check, whose scanner once counted a commented-out call.
      */
-    private static String skeleton(String source) {
+    static String skeleton(String source) {
         StringBuilder out = new StringBuilder(source.length());
         int length = source.length();
         int i = 0;

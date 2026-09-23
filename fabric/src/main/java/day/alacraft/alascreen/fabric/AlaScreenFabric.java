@@ -112,9 +112,9 @@ public class AlaScreenFabric implements ClientModInitializer {
      * as broken.
      *
      * <p>F7 rather than a letter, and rather than the obvious F6. Checked
-     * against the 26.2 jar rather than remembered: vanilla binds F2 (screenshot),
+     * against the 26.2 and 26.3 jars rather than remembered: vanilla binds F2 (screenshot),
      * F3 and F4 (debug), F5 (perspective), F11 (fullscreen) — and **F6, which is
-     * {@code key.debug.debug}**. F7 is free, sits next to the screenshot key it
+     * {@code key.debug.debugOptions}**. F7 is free, sits next to the screenshot key it
      * belongs with, and function keys are far less contested by other mods than
      * letters like G, K or V.
      *
@@ -128,8 +128,7 @@ public class AlaScreenFabric implements ClientModInitializer {
 
         return KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.alascreen.capture",
-                InputConstants.Type.KEYSYM,
-                org.lwjgl.glfw.GLFW.GLFW_KEY_F7,
+                InputConstants.KEY_F7,
                 category));
     }
 

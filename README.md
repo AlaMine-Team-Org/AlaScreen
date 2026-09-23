@@ -48,7 +48,7 @@ picture itself.
 
 ## Status
 
-Version 0.1.0 on Minecraft 26.2, **Fabric and NeoForge**, client-side only — it
+Minecraft 26.2, **Fabric and NeoForge**, client-side only — it
 works in singleplayer, on a vanilla server, and on a server that has never heard
 of it.
 
@@ -102,7 +102,7 @@ layer, so that file is not optional reading.
 | `persistHistory` | `true` | Remember upload ids and delete tokens across restarts |
 
 The key binding defaults to **F7** — next to the screenshot key it belongs with,
-and free in 26.2 (F6 is not: it is the debug key). Rebind it under
+and free in 26.2 (F6 is not: it opens the debug options). Rebind it under
 Options → Controls → *Ala Screen*, or ignore it entirely: pressing F2 gives you
 the same offer in chat.
 

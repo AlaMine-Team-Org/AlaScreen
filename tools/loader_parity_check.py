@@ -273,7 +273,10 @@ def check_owner_list_current(fabric, neoforge, fabric_raw, neoforge_raw):
 
 
 def check_default_key(fabric, neoforge):
-    pattern = re.compile(r"GLFW_KEY_([A-Z0-9_]+)")
+    # InputConstants, never GLFW: 26.3 dropped GLFW for SDL3, and the key codes
+    # are compile-time constants, so only the named constant stays correct on
+    # both Minecraft versions.
+    pattern = re.compile(r"\bInputConstants\.KEY_([A-Z0-9_]+)")
     fabric_keys = set(pattern.findall(fabric))
     neoforge_keys = set(pattern.findall(neoforge))
 

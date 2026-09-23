@@ -62,14 +62,13 @@ public class AlaScreenNeoForge {
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath(AlaScreen.MOD_ID, "main"));
 
     /**
-     * F7 by default, matching Fabric. Verified free against the 26.2 jar: vanilla
+     * F7 by default, matching Fabric. Verified free against the 26.2 and 26.3 jars: vanilla
      * holds F2 (screenshot), F3 and F4 (debug), F5 (perspective), F11 (fullscreen)
-     * and — easy to get wrong — F6, which is {@code key.debug.debug}.
+     * and — easy to get wrong — F6, which is {@code key.debug.debugOptions}.
      */
     private static final KeyMapping SHARE_KEY = new KeyMapping(
             "key.alascreen.capture",
-            InputConstants.Type.KEYSYM,
-            org.lwjgl.glfw.GLFW.GLFW_KEY_F7,
+            InputConstants.KEY_F7,
             CATEGORY);
 
     public AlaScreenNeoForge(IEventBus modBus) {

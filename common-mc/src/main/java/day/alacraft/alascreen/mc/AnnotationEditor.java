@@ -1,5 +1,6 @@
 package day.alacraft.alascreen.mc;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import day.alacraft.alascreen.AlaScreen;
 import day.alacraft.alascreen.annotate.Rasterizer;
@@ -260,7 +261,7 @@ final class AnnotationEditor {
             }
         }
 
-        if (button != 0 || !inside(x, y, preview[0], preview[1], preview[2], preview[3])) {
+        if (button != InputConstants.MOUSE_BUTTON_LEFT || !inside(x, y, preview[0], preview[1], preview[2], preview[3])) {
             return false;
         }
 

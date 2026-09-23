@@ -14,7 +14,6 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -291,7 +290,7 @@ public final class ConfirmUploadScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        if (event.hasControlDown() && event.key() == GLFW.GLFW_KEY_Z && editor.undoKey()) {
+        if (InputCompat.isUndo(event) && editor.undoKey()) {
             return true;
         }
 
