@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "Sdílet tento snímek obrazovky?",
   "alascreen.confirm.warning": "Nejdřív se na záběr podívej. Souřadnice, chat a názvy serverů na snímku se spolu s ním stanou veřejnými.",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "%1$s x %2$s po oříznutí",
   "alascreen.confirm.upload": "Nahrát",
   "alascreen.confirm.cancel": "Zrušit",
   "alascreen.confirm.save_only": "Uložit bez nahrání",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "Rámeček",
   "alascreen.annotate.pen": "Pero",
   "alascreen.annotate.redact": "Zakrýt: plný blok skryje souřadnice, jména nebo chat",
+  "alascreen.annotate.crop": "Oříznout: táhněte rámeček kolem toho, co zůstane. Se Shiftem čtverec",
   "alascreen.annotate.undo": "Zpět (Ctrl+Z)",
-  "alascreen.annotate.clear": "Odstranit všechny značky",
+  "alascreen.annotate.clear": "Odstranit všechny značky i oříznutí",
   "alascreen.error.annotate_failed": "Značky se nepodařilo použít. Nic nebylo odesláno ani uloženo."
 }

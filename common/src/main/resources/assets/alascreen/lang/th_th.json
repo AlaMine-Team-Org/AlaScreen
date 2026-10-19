@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "แชร์ภาพหน้าจอนี้ไหม?",
   "alascreen.confirm.warning": "ดูภาพให้ดีก่อน พิกัด แชท และชื่อเซิร์ฟเวอร์ที่ติดมาในภาพจะกลายเป็นสาธารณะไปพร้อมกับภาพ",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "%1$s x %2$s หลังครอบตัด",
   "alascreen.confirm.upload": "อัปโหลด",
   "alascreen.confirm.cancel": "ยกเลิก",
   "alascreen.confirm.save_only": "บันทึกโดยไม่อัปโหลด",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "กรอบ",
   "alascreen.annotate.pen": "ปากกา",
   "alascreen.annotate.redact": "ปิดทับ: บล็อกทึบซ่อนพิกัด ชื่อ หรือแชท",
+  "alascreen.annotate.crop": "ครอบตัด: ลากกรอบรอบส่วนที่ต้องการเก็บ กด Shift เพื่อได้สี่เหลี่ยมจัตุรัส",
   "alascreen.annotate.undo": "เลิกทำ (Ctrl+Z)",
-  "alascreen.annotate.clear": "ลบเครื่องหมายทั้งหมด",
+  "alascreen.annotate.clear": "ลบเครื่องหมายทั้งหมดและการครอบตัด",
   "alascreen.error.annotate_failed": "ใส่เครื่องหมายไม่สำเร็จ จึงไม่ได้ส่งหรือบันทึกสิ่งใด"
 }

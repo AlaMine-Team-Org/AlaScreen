@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "Bu ekran görüntüsü paylaşılsın mı?",
   "alascreen.confirm.warning": "Önce kareye bak. Görüntüdeki koordinatlar, sohbet ve sunucu adları onunla birlikte herkese açık olur.",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "Kırpmadan sonra %1$s x %2$s",
   "alascreen.confirm.upload": "Yükle",
   "alascreen.confirm.cancel": "İptal",
   "alascreen.confirm.save_only": "Yüklemeden kaydet",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "Çerçeve",
   "alascreen.annotate.pen": "Kalem",
   "alascreen.annotate.redact": "Kapat: düz bir blok koordinatları, adları veya sohbeti gizler",
+  "alascreen.annotate.crop": "Kırp: kalacak kısmın çevresine çerçeve çizin. Shift ile kare",
   "alascreen.annotate.undo": "Geri al (Ctrl+Z)",
-  "alascreen.annotate.clear": "Tüm işaretleri kaldır",
+  "alascreen.annotate.clear": "Tüm işaretleri ve kırpmayı kaldır",
   "alascreen.error.annotate_failed": "İşaretler uygulanamadı. Hiçbir şey gönderilmedi veya kaydedilmedi."
 }

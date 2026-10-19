@@ -3,7 +3,7 @@ package day.alacraft.alascreen.mc;
 import day.alacraft.alascreen.AlaScreen;
 import day.alacraft.alascreen.Config;
 import day.alacraft.alascreen.UploadService;
-import day.alacraft.alascreen.annotate.Stroke;
+import day.alacraft.alascreen.annotate.Markup;
 import day.alacraft.alascreen.clipboard.CopyOutcome;
 import day.alacraft.alascreen.clipboard.ImageClipboard;
 import day.alacraft.alascreen.history.UploadRecord;
@@ -240,10 +240,17 @@ public final class ShareController {
             return;
         }
 
+        // The full-size bytes stay referenced until the player decides: a crop
+        // of a shot that was scaled to the limit is cut from these, not from
+        // the scaled preview. A heap array, so nothing here needs closing.
+        CapturedShot source = original;
+
         minecraft.setScreenAndShow(new ConfirmUploadScreen(
                 shot,
-                (confirmed, marks) -> withMarks(minecraft, confirmed, marks, marked -> upload(minecraft, marked)),
-                (kept, marks) -> withMarks(minecraft, kept, marks, marked -> saveOnly(minecraft, marked)),
+                source.width(),
+                source.height(),
+                (confirmed, markup) -> withMarks(minecraft, confirmed, source, markup, marked -> upload(minecraft, marked)),
+                (kept, markup) -> withMarks(minecraft, kept, source, markup, marked -> saveOnly(minecraft, marked)),
                 () -> busy.set(false),
                 this::rememberDoNotAsk));
     }
@@ -258,18 +265,29 @@ public final class ShareController {
      * <p>A failure stops the flow instead of falling back to the unmarked shot.
      * The marks may be cover-ups, and sending the picture without them would
      * publish exactly what the player just hid.
+     *
+     * <p>With a crop on a shot that was scaled down to the limit, the frame is
+     * decoded again from {@code source} at full size. Without that, cropping a
+     * 4K capture to one sign would upload the sign at a fraction of the
+     * resolution the player's monitor gave it. The result is fitted to the
+     * limit again below, so it never sends more than the site accepts.
      */
-    private void withMarks(Minecraft minecraft, CapturedShot shot, List<Stroke> marks, Consumer<CapturedShot> then) {
-        if (marks.isEmpty()) {
+    private void withMarks(Minecraft minecraft, CapturedShot shot, CapturedShot source, Markup markup,
+                           Consumer<CapturedShot> then) {
+        if (markup.isEmpty()) {
             then.accept(shot);
             return;
         }
 
-        NativeImage frame = ScreenCapture.copyOf(shot.image());
+        boolean fullSize = markup.crop().isPresent() && source != shot;
+        // The copy is taken here, on the render thread, while the preview still owns the frame.
+        NativeImage preview = fullSize ? null : ScreenCapture.copyOf(shot.image());
         Path workDirectory = screenshotsDirectory.resolveSibling(".alascreen-tmp");
 
         CompletableFuture
-                .supplyAsync(() -> ScreenCapture.mark(shot, frame, marks, workDirectory), runnable ->
+                .supplyAsync(() -> ScreenCapture.mark(shot,
+                        fullSize ? ScreenCapture.decode(source.png()) : preview,
+                        markup, workDirectory), runnable ->
                         new Thread(runnable, "AlaScreen mark").start())
                 .whenComplete((marked, failure) -> minecraft.execute(() -> {
                     if (failure != null) {

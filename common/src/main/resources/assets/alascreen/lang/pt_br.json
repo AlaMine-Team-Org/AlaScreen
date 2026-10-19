@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "Compartilhar esta captura de tela?",
   "alascreen.confirm.warning": "Olhe a imagem primeiro. Coordenadas, chat e o endereço do servidor ficam públicos junto com ela.",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "%1$s x %2$s após recortar",
   "alascreen.confirm.upload": "Enviar",
   "alascreen.confirm.cancel": "Cancelar",
   "alascreen.confirm.save_only": "Salvar sem enviar",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "Moldura",
   "alascreen.annotate.pen": "Lápis",
   "alascreen.annotate.redact": "Cobrir: um bloco sólido esconde coordenadas, nomes ou chat",
+  "alascreen.annotate.crop": "Recortar: arraste uma moldura em volta do que quer manter. Com Shift, quadrado",
   "alascreen.annotate.undo": "Desfazer (Ctrl+Z)",
-  "alascreen.annotate.clear": "Remover todas as marcações",
+  "alascreen.annotate.clear": "Remover todas as marcações e o recorte",
   "alascreen.error.annotate_failed": "Não foi possível aplicar as marcações. Nada foi enviado nem salvo."
 }

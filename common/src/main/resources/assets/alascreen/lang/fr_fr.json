@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "Partager cette capture ?",
   "alascreen.confirm.warning": "Regardez d'abord l'image. Les coordonnées, le chat et l'adresse du serveur deviennent publics avec elle.",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "%1$s x %2$s après rognage",
   "alascreen.confirm.upload": "Envoyer",
   "alascreen.confirm.cancel": "Annuler",
   "alascreen.confirm.save_only": "Enregistrer sans envoyer",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "Cadre",
   "alascreen.annotate.pen": "Crayon",
   "alascreen.annotate.redact": "Masquer : un bloc plein cache coordonnées, pseudos ou chat",
+  "alascreen.annotate.crop": "Rogner : tracez un cadre autour de ce qu'il faut garder. Maj pour un carré",
   "alascreen.annotate.undo": "Annuler (Ctrl+Z)",
-  "alascreen.annotate.clear": "Retirer toutes les annotations",
+  "alascreen.annotate.clear": "Retirer toutes les annotations et le rognage",
   "alascreen.error.annotate_failed": "Impossible d'appliquer les annotations. Rien n'a été envoyé ni enregistré."
 }

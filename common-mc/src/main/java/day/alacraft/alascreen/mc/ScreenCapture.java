@@ -2,8 +2,9 @@ package day.alacraft.alascreen.mc;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import day.alacraft.alascreen.AlaScreen;
+import day.alacraft.alascreen.annotate.Crop;
+import day.alacraft.alascreen.annotate.Markup;
 import day.alacraft.alascreen.annotate.Rasterizer;
-import day.alacraft.alascreen.annotate.Stroke;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 
@@ -12,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -239,18 +239,40 @@ public final class ScreenCapture {
     }
 
     /**
-     * Burn the marks into {@code frame} and encode it. Off the render thread.
+     * Decode a PNG into a frame of our own. Off the render thread.
      *
-     * <p>When the shot has a file on disk, the marked picture is written next to
+     * <p>Used to cut a crop from the full-resolution capture when the preview
+     * shows a copy scaled down to the site's limit: cutting from the scaled copy
+     * would throw away exactly the detail a crop is meant to keep.
+     */
+    public static NativeImage decode(byte[] png) {
+        try {
+            return NativeImage.read(png);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not decode the full-size capture: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Burn the marks into {@code frame}, cut the crop, and encode it. Off the render thread.
+     *
+     * <p>Marks first, crop second, because a mark's width is a fraction of the
+     * whole frame's shorter side, as it was on the preview.
+     *
+     * <p>When the shot has a file on disk, the edited picture is written next to
      * it as {@code <name>-marked.png} and the original is left alone: that is the
-     * player's screenshot. The upload then points at the marked file, so
+     * player's screenshot. The upload then points at the edited file, so
      * {@code [copy image]} puts on the clipboard what was actually shared.
      *
-     * @param frame a copy from {@link #copyOf}; the returned shot owns it
+     * @param frame a copy from {@link #copyOf} or {@link #decode}; this method owns it from here
      */
-    public static CapturedShot mark(CapturedShot shot, NativeImage frame, List<Stroke> marks, Path workDirectory) {
+    public static CapturedShot mark(CapturedShot shot, NativeImage frame, Markup markup, Path workDirectory) {
         try {
-            Rasterizer.paint(new ImageCanvas(frame), marks);
+            Rasterizer.paint(new ImageCanvas(frame), markup.strokes());
+
+            if (markup.crop().isPresent()) {
+                frame = cut(frame, markup.crop().get());
+            }
 
             if (shot.savedTo().isPresent()) {
                 String name = markedName(shot.fileName());
@@ -267,6 +289,28 @@ public final class ScreenCapture {
             frame.close();
             throw new IllegalStateException("Could not apply the marks: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * The part of {@code frame} the crop keeps, as a new image; {@code frame} is closed.
+     *
+     * <p>{@code copyRect} copies pixel for pixel, no filtering, so the cut is
+     * exactly the pixels that were under the crop. Closes the new image itself
+     * when the copy fails, since nobody else has it yet.
+     */
+    private static NativeImage cut(NativeImage frame, Crop crop) {
+        int[] rect = crop.pixels(frame.getWidth(), frame.getHeight());
+        NativeImage piece = new NativeImage(frame.format(), rect[2], rect[3], false);
+
+        try {
+            frame.copyRect(piece, rect[0], rect[1], 0, 0, rect[2], rect[3], false, false);
+        } catch (RuntimeException e) {
+            piece.close();
+            throw e;
+        }
+
+        frame.close();
+        return piece;
     }
 
     static String markedName(String fileName) {

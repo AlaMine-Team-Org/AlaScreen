@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "Share this screenshot?",
   "alascreen.confirm.warning": "Look at the frame first. Coordinates, chat and server names in the shot become public with it.",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "%1$s x %2$s after cropping",
   "alascreen.confirm.upload": "Upload",
   "alascreen.confirm.cancel": "Cancel",
   "alascreen.confirm.save_only": "Save without uploading",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "Frame",
   "alascreen.annotate.pen": "Pen",
   "alascreen.annotate.redact": "Cover up: a solid block that hides coordinates, names or chat",
+  "alascreen.annotate.crop": "Crop: drag a frame around what to keep. Shift for a square",
   "alascreen.annotate.undo": "Undo (Ctrl+Z)",
-  "alascreen.annotate.clear": "Remove all marks",
+  "alascreen.annotate.clear": "Remove all marks and the crop",
   "alascreen.error.annotate_failed": "Could not apply the marks. Nothing was sent or saved."
 }

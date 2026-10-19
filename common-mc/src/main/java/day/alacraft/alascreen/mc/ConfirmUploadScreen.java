@@ -1,7 +1,8 @@
 package day.alacraft.alascreen.mc;
 
 import day.alacraft.alascreen.AlaScreen;
-import day.alacraft.alascreen.annotate.Stroke;
+import day.alacraft.alascreen.annotate.Crop;
+import day.alacraft.alascreen.annotate.Markup;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -58,12 +59,15 @@ public final class ConfirmUploadScreen extends Screen {
     private static final int WARNING = 0xFFFFD24A;
 
     private final CapturedShot shot;
-    private final BiConsumer<CapturedShot, List<Stroke>> onUpload;
-    private final BiConsumer<CapturedShot, List<Stroke>> onSaveOnly;
+    private final BiConsumer<CapturedShot, Markup> onUpload;
+    private final BiConsumer<CapturedShot, Markup> onSaveOnly;
     private final Runnable onCancel;
     private final Consumer<Boolean> onRememberChanged;
 
-    private final AnnotationEditor editor = new AnnotationEditor(Minecraft.getInstance());
+    private final AnnotationEditor editor;
+
+    private final int sourceWidth;
+    private final int sourceHeight;
 
     private final Identifier textureId;
     private DynamicTexture texture;
@@ -78,9 +82,15 @@ public final class ConfirmUploadScreen extends Screen {
     /** Set once the decision is made, so {@link #removed()} knows not to free the bytes' frame twice. */
     private boolean decided;
 
+    /**
+     * @param sourceWidth  the frame a crop is cut from, which is larger than {@code shot}
+     *                     when the upload had to be scaled down; equal to it otherwise
+     */
     public ConfirmUploadScreen(CapturedShot shot,
-                               BiConsumer<CapturedShot, List<Stroke>> onUpload,
-                               BiConsumer<CapturedShot, List<Stroke>> onSaveOnly,
+                               int sourceWidth,
+                               int sourceHeight,
+                               BiConsumer<CapturedShot, Markup> onUpload,
+                               BiConsumer<CapturedShot, Markup> onSaveOnly,
                                Runnable onCancel,
                                Consumer<Boolean> onRememberChanged) {
         super(Component.translatable("alascreen.confirm.title"));
@@ -90,6 +100,9 @@ public final class ConfirmUploadScreen extends Screen {
         this.onSaveOnly = onSaveOnly;
         this.onCancel = onCancel;
         this.onRememberChanged = onRememberChanged;
+        this.editor = new AnnotationEditor(Minecraft.getInstance(), sourceWidth, sourceHeight);
+        this.sourceWidth = sourceWidth;
+        this.sourceHeight = sourceHeight;
 
         // Unique per capture: two screens in one session must not share a
         // texture id, or the second would show the first one's picture.
@@ -214,7 +227,7 @@ public final class ConfirmUploadScreen extends Screen {
         decided = true;
         // Before the screen closes: the marks are burnt into a copy of the
         // frame, and the frame is freed with the preview texture in removed().
-        onSaveOnly.accept(shot, editor.strokes());
+        onSaveOnly.accept(shot, editor.markup());
         minecraft.gui.setScreen(null);
     }
 
@@ -225,7 +238,7 @@ public final class ConfirmUploadScreen extends Screen {
             onRememberChanged.accept(Boolean.TRUE);
         }
 
-        onUpload.accept(shot, editor.strokes());
+        onUpload.accept(shot, editor.markup());
 
         // Closed directly rather than through onClose(): this screen's onClose is
         // the cancel path and would report a cancellation we just overrode.
@@ -272,7 +285,7 @@ public final class ConfirmUploadScreen extends Screen {
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         int[] preview = previewRect();
 
-        if (preview != null && editor.mouseDragged(event.x(), event.y(), preview)) {
+        if (preview != null && editor.mouseDragged(event.x(), event.y(), event.hasShiftDown(), preview)) {
             return true;
         }
 
@@ -319,10 +332,7 @@ public final class ConfirmUploadScreen extends Screen {
 
         drawPreview(graphics);
 
-        graphics.centeredText(f,
-                Component.translatable("alascreen.confirm.details",
-                        shot.width(), shot.height(), ChatFormat.size(shot.bytes())),
-                width / 2, buttonRowTop - 42, MUTED);
+        graphics.centeredText(f, details(), width / 2, buttonRowTop - 42, MUTED);
 
         editor.extractDecorations(graphics);
     }
@@ -377,6 +387,26 @@ public final class ConfirmUploadScreen extends Screen {
         graphics.blit(textureId, x0, y0, x0 + drawWidth, y0 + drawHeight, 0.0F, 1.0F, 0.0F, 1.0F);
 
         editor.extractOverlay(graphics, x0, y0, drawWidth, drawHeight);
+        editor.extractCrop(graphics, x0, y0, drawWidth, drawHeight);
+    }
+
+    /**
+     * Size and weight of what is about to leave, or, with a crop, the size it is cut to.
+     *
+     * <p>The cut is measured on the full frame, which is what it will be taken
+     * from. The byte count is left out there: it is only known after encoding,
+     * and a number that is about to be wrong is worse than none.
+     */
+    private Component details() {
+        Crop crop = editor.visibleCrop();
+
+        if (crop == null) {
+            return Component.translatable("alascreen.confirm.details",
+                    shot.width(), shot.height(), ChatFormat.size(shot.bytes()));
+        }
+
+        int[] cut = crop.pixels(sourceWidth, sourceHeight);
+        return Component.translatable("alascreen.confirm.details_cropped", cut[2], cut[3]);
     }
 
     @Override

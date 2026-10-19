@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "このスクリーンショットを共有しますか？",
   "alascreen.confirm.warning": "まず画面を確認してください。座標・チャット・サーバーアドレスも一緒に公開されます。",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "切り抜き後 %1$s x %2$s",
   "alascreen.confirm.upload": "アップロード",
   "alascreen.confirm.cancel": "キャンセル",
   "alascreen.confirm.save_only": "アップロードせず保存",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "枠",
   "alascreen.annotate.pen": "ペン",
   "alascreen.annotate.redact": "塗りつぶし: 座標・名前・チャットを隠す不透明なブロック",
+  "alascreen.annotate.crop": "切り抜き: 残したい部分を枠で囲みます。Shift で正方形",
   "alascreen.annotate.undo": "元に戻す (Ctrl+Z)",
-  "alascreen.annotate.clear": "書き込みをすべて消す",
+  "alascreen.annotate.clear": "書き込みと切り抜きをすべて消す",
   "alascreen.error.annotate_failed": "書き込みを適用できませんでした。送信も保存もしていません。"
 }

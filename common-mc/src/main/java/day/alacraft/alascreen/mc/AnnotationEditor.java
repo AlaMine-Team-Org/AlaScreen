@@ -3,6 +3,8 @@ package day.alacraft.alascreen.mc;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import day.alacraft.alascreen.AlaScreen;
+import day.alacraft.alascreen.annotate.Crop;
+import day.alacraft.alascreen.annotate.Markup;
 import day.alacraft.alascreen.annotate.Rasterizer;
 import day.alacraft.alascreen.annotate.Stroke;
 import day.alacraft.alascreen.annotate.Tool;
@@ -20,6 +22,8 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -94,18 +98,58 @@ final class AnnotationEditor {
             "##......##", "###....###", ".###..###.", "..######..", "...####...",
             "...####...", "..######..", ".###..###.", "###....###", "##......##"};
 
+    private static final String[] CROP_ICON = {
+            ".##.......", ".##.......", "########..", "########..", ".##...##..",
+            ".##...##..", ".#########", ".#########", "......##..", "......##.."};
+
+    /** Over what is cut away: dark enough to read as "gone", light enough to still aim by. */
+    private static final int CROP_SHADE = 0xB0000000;
+    private static final int CROP_EDGE = 0xFFFFFFFF;
+    private static final int HANDLE = 4;
+
+    /** How far from a crop edge, in GUI pixels, still grabs it. */
+    private static final int REACH = 4;
+
+    /** One entry per action, so Ctrl+Z undoes a crop as readily as an arrow. */
+    private sealed interface Edit {
+    }
+
+    private record Drawn(Stroke stroke) implements Edit {
+    }
+
+    /** @param before null when there was no crop */
+    private record Cropped(Crop before) implements Edit {
+    }
+
     private final Minecraft minecraft;
     private final Identifier overlayId;
 
+    /** The frame the crop will be cut from, which is larger than the preview's when the upload was scaled down. */
+    private final int sourceWidth;
+    private final int sourceHeight;
+
     private final List<Stroke> strokes = new ArrayList<>();
+    private final List<Edit> history = new ArrayList<>();
     private List<Stroke.Point> drawing;
     private Tool tool = Tool.ARROW;
+    private boolean cropping;
     private int colour = PALETTE[0];
     private int widthIndex = 1;
     private boolean open;
 
+    /** Null when the whole frame is kept. */
+    private Crop crop;
+
+    /** While a crop drag is under way: the crop it started from, how, where, and what it shows now. */
+    private Crop cropStart;
+    private Crop.Handle cropHandle;
+    private Stroke.Point cropFrom;
+    private Crop cropLive;
+    private boolean cropDragging;
+
     private Button toggle;
     private final Map<Tool, Button> toolButtons = new EnumMap<>(Tool.class);
+    private Button cropButton;
     private Button undo;
     private Button clear;
 
@@ -121,8 +165,10 @@ final class AnnotationEditor {
     private int overlayHeight;
     private boolean dirty = true;
 
-    AnnotationEditor(Minecraft minecraft) {
+    AnnotationEditor(Minecraft minecraft, int sourceWidth, int sourceHeight) {
         this.minecraft = minecraft;
+        this.sourceWidth = sourceWidth;
+        this.sourceHeight = sourceHeight;
         this.overlayId = Identifier.fromNamespaceAndPath(
                 AlaScreen.MOD_ID, "marks/" + Long.toHexString(System.nanoTime()));
     }
@@ -143,6 +189,9 @@ final class AnnotationEditor {
         y += BUTTON + GAP;
         add.accept(toolButton(Tool.PEN, "alascreen.annotate.pen", left, y));
         add.accept(toolButton(Tool.REDACT, "alascreen.annotate.redact", right, y));
+        y += BUTTON + GAP;
+        cropButton = iconButton("alascreen.annotate.crop", left, y, button -> cropping = true);
+        add.accept(cropButton);
         y += BUTTON + SECTION;
 
         undo = iconButton("alascreen.annotate.undo", left, y, button -> undoLast());
@@ -164,12 +213,20 @@ final class AnnotationEditor {
         sync();
     }
 
-    List<Stroke> strokes() {
-        return List.copyOf(strokes);
+    Markup markup() {
+        return new Markup(strokes, Optional.ofNullable(crop));
+    }
+
+    /** The crop the player sees right now, mid-drag included; null for none. */
+    Crop visibleCrop() {
+        return cropDragging ? cropLive : crop;
     }
 
     private Button toolButton(Tool target, String tooltipKey, int x, int y) {
-        Button button = Button.builder(Component.empty(), pressed -> tool = target)
+        Button button = Button.builder(Component.empty(), pressed -> {
+                    tool = target;
+                    cropping = false;
+                })
                 .bounds(x, y, BUTTON, BUTTON)
                 .tooltip(Tooltip.create(Component.translatable(tooltipKey)))
                 .build();
@@ -198,26 +255,38 @@ final class AnnotationEditor {
     private void toggle(Font font) {
         open = !open;
         drawing = null;
+        cropFrom = null;
+        cropDragging = false;
         toggle.setMessage(toggleLabel());
         placeToggle(font);
         sync();
     }
 
     private void undoLast() {
-        if (!strokes.isEmpty()) {
-            strokes.removeLast();
-            changed();
+        if (history.isEmpty()) {
+            return;
         }
-    }
 
-    private void clearAll() {
-        strokes.clear();
+        switch (history.removeLast()) {
+            // Strokes are only ever appended, so the newest Drawn is the last stroke.
+            case Drawn drawn -> strokes.removeLast();
+            case Cropped cropped -> crop = cropped.before();
+        }
+
         changed();
     }
 
-    /** Ctrl+Z. Works with the panel folded too: the marks are still on the picture. */
+    /** Marks and crop both: "start over" should leave the picture as it was taken. */
+    private void clearAll() {
+        strokes.clear();
+        history.clear();
+        crop = null;
+        changed();
+    }
+
+    /** Ctrl+Z. Works with the panel folded too: the marks and the crop are still on the picture. */
     boolean undoKey() {
-        if (strokes.isEmpty()) {
+        if (history.isEmpty()) {
             return false;
         }
         undoLast();
@@ -233,10 +302,11 @@ final class AnnotationEditor {
         for (Button button : toolButtons.values()) {
             button.visible = open;
         }
+        cropButton.visible = open;
         undo.visible = open;
         clear.visible = open;
-        undo.active = !strokes.isEmpty();
-        clear.active = !strokes.isEmpty();
+        undo.active = !history.isEmpty();
+        clear.active = !strokes.isEmpty() || crop != null;
     }
 
     // ---- input ----
@@ -261,7 +331,15 @@ final class AnnotationEditor {
             }
         }
 
-        if (button != InputConstants.MOUSE_BUTTON_LEFT || !inside(x, y, preview[0], preview[1], preview[2], preview[3])) {
+        if (button != InputConstants.MOUSE_BUTTON_LEFT) {
+            return false;
+        }
+
+        if (cropping) {
+            return startCrop(x, y, preview);
+        }
+
+        if (!inside(x, y, preview[0], preview[1], preview[2], preview[3])) {
             return false;
         }
 
@@ -271,7 +349,51 @@ final class AnnotationEditor {
         return true;
     }
 
-    boolean mouseDragged(double x, double y, int[] preview) {
+    /**
+     * Grab the existing crop by a handle or its inside, or start a new one.
+     *
+     * <p>The reach extends a little past the picture, because a crop that runs
+     * to the edge has its handles exactly there and half of each lies outside.
+     */
+    private boolean startCrop(double x, double y, int[] preview) {
+        if (!inside(x, y, preview[0] - REACH, preview[1] - REACH, preview[2] + REACH * 2, preview[3] + REACH * 2)) {
+            return false;
+        }
+
+        Stroke.Point at = point(x, y, preview);
+        cropHandle = crop == null ? null
+                : crop.handleAt((x - preview[0]) / preview[2], (y - preview[1]) / preview[3],
+                        REACH / (double) preview[2], REACH / (double) preview[3]);
+
+        // Outside the old frame starts a new one, but only from inside the picture.
+        if (cropHandle == null && !inside(x, y, preview[0], preview[1], preview[2], preview[3])) {
+            return false;
+        }
+
+        cropStart = crop;
+        cropFrom = at;
+        cropLive = crop;
+        cropDragging = cropHandle != null;
+        return true;
+    }
+
+    boolean mouseDragged(double x, double y, boolean shift, int[] preview) {
+        if (cropFrom != null) {
+            Stroke.Point point = point(x, y, preview);
+            double aspect = sourceWidth / (double) sourceHeight;
+
+            if (cropHandle == null) {
+                cropLive = Crop.spanning(cropFrom, point, shift, aspect);
+            } else if (cropHandle == Crop.Handle.MOVE) {
+                cropLive = cropStart.moved(point.x() - cropFrom.x(), point.y() - cropFrom.y());
+            } else {
+                cropLive = cropStart.resized(cropHandle, point, shift, aspect);
+            }
+
+            cropDragging = true;
+            return true;
+        }
+
         if (drawing == null) {
             return false;
         }
@@ -293,6 +415,11 @@ final class AnnotationEditor {
     }
 
     boolean mouseReleased() {
+        if (cropFrom != null) {
+            finishCrop();
+            return true;
+        }
+
         if (drawing == null) {
             return false;
         }
@@ -307,10 +434,44 @@ final class AnnotationEditor {
 
         if (!empty) {
             strokes.add(stroke);
+            history.add(new Drawn(stroke));
         }
 
         changed();
         return true;
+    }
+
+    /**
+     * Keep what the drag produced, unless it is not a crop anyone meant.
+     *
+     * <p>Judged in pixels of the frame that will be cut, not of the preview: a
+     * frame two preview pixels wide may be forty real ones on a 4K shot, and
+     * the other way round on a small window.
+     */
+    private void finishCrop() {
+        Crop result = cropDragging ? cropLive : crop;
+
+        cropFrom = null;
+        cropStart = null;
+        cropHandle = null;
+        cropLive = null;
+        cropDragging = false;
+
+        if (result != null && result.tooSmall(sourceWidth, sourceHeight)) {
+            // A click, or a drag that went nowhere: leave the crop as it was.
+            result = crop;
+        }
+
+        if (result != null && result.whole(sourceWidth, sourceHeight)) {
+            result = null;
+        }
+
+        if (!Objects.equals(result, crop)) {
+            history.add(new Cropped(crop));
+            crop = result;
+        }
+
+        changed();
     }
 
     private Stroke current() {
@@ -380,9 +541,14 @@ final class AnnotationEditor {
             Button button = entry.getValue();
             icon(graphics, ICONS.get(entry.getKey()), button.getX() + 5, button.getY() + 5, true);
 
-            if (entry.getKey() == tool) {
+            if (!cropping && entry.getKey() == tool) {
                 frame(graphics, button.getX(), button.getY(), BUTTON, BUTTON, SELECTED);
             }
+        }
+
+        icon(graphics, CROP_ICON, cropButton.getX() + 5, cropButton.getY() + 5, true);
+        if (cropping) {
+            frame(graphics, cropButton.getX(), cropButton.getY(), BUTTON, BUTTON, SELECTED);
         }
 
         icon(graphics, UNDO_ICON, undo.getX() + 5, undo.getY() + 5, undo.active);
@@ -473,6 +639,50 @@ final class AnnotationEditor {
         }
 
         graphics.blit(overlayId, x, y, x + width, y + height, 0.0F, 1.0F, 0.0F, 1.0F);
+    }
+
+    /**
+     * Darken what the crop cuts away, outline what it keeps.
+     *
+     * <p>Shown with the panel folded too: the crop still applies, and a player
+     * who folds the panel and presses Upload must see what will be sent. The
+     * handles only appear while the crop tool is in hand.
+     */
+    void extractCrop(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
+        Crop shown = visibleCrop();
+
+        if (shown == null) {
+            return;
+        }
+
+        // The same rounding as the cut, at the preview's size.
+        int[] keep = shown.pixels(width, height);
+        int x0 = x + keep[0];
+        int y0 = y + keep[1];
+        int x1 = x0 + keep[2];
+        int y1 = y0 + keep[3];
+
+        graphics.fill(x, y, x + width, y0, CROP_SHADE);
+        graphics.fill(x, y1, x + width, y + height, CROP_SHADE);
+        graphics.fill(x, y0, x0, y1, CROP_SHADE);
+        graphics.fill(x1, y0, x + width, y1, CROP_SHADE);
+
+        frame(graphics, x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2, CROP_EDGE);
+
+        if (!open || !cropping) {
+            return;
+        }
+
+        int midX = (x0 + x1) / 2;
+        int midY = (y0 + y1) / 2;
+        int[][] handles = {{x0, y0}, {midX, y0}, {x1, y0}, {x1, midY}, {x1, y1}, {midX, y1}, {x0, y1}, {x0, midY}};
+
+        for (int[] handle : handles) {
+            int hx = handle[0] - HANDLE / 2;
+            int hy = handle[1] - HANDLE / 2;
+            graphics.fill(hx - 1, hy - 1, hx + HANDLE + 1, hy + HANDLE + 1, OUTLINE);
+            graphics.fill(hx, hy, hx + HANDLE, hy + HANDLE, CROP_EDGE);
+        }
     }
 
     /** Frees the overlay texture, and with it the image it owns. */

@@ -24,6 +24,7 @@
   "alascreen.confirm.title": "이 스크린샷을 공유하시겠습니까?",
   "alascreen.confirm.warning": "먼저 화면을 확인하세요. 좌표, 채팅, 서버 이름도 함께 공개됩니다.",
   "alascreen.confirm.details": "%1$s x %2$s, %3$s",
+  "alascreen.confirm.details_cropped": "자른 후 %1$s x %2$s",
   "alascreen.confirm.upload": "업로드",
   "alascreen.confirm.cancel": "취소",
   "alascreen.confirm.save_only": "업로드하지 않고 저장",
@@ -77,7 +78,8 @@
   "alascreen.annotate.frame": "테두리",
   "alascreen.annotate.pen": "펜",
   "alascreen.annotate.redact": "가리기: 불투명한 블록으로 좌표, 이름, 채팅을 숨깁니다",
+  "alascreen.annotate.crop": "자르기: 남길 부분을 테두리로 감싸세요. Shift를 누르면 정사각형",
   "alascreen.annotate.undo": "실행 취소 (Ctrl+Z)",
-  "alascreen.annotate.clear": "모든 표시 지우기",
+  "alascreen.annotate.clear": "모든 표시와 자르기 지우기",
   "alascreen.error.annotate_failed": "표시를 적용하지 못했습니다. 아무것도 보내거나 저장하지 않았습니다."
 }
